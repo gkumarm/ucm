@@ -1,0 +1,50 @@
+{% extends './base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+{{ form.media }}
+<br>
+
+<div  class="container">
+	<div  class="row justify-content-center">
+		<div  class="col-5"><br>
+		<h1  class="text-center">Sign in</h1><br>
+			<div  class="card">
+				<div  class="card-body">
+					<h4  class="card-title">Sign in to your account</h4>
+					<hr>
+					<form method="post" action="{% url 'uauth:login' %}">
+						{% csrf_token %}
+						<div class="form-group">
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text"><span class="oi oi-person"></span></span>
+								</div>
+								<input name="username" class="form-control" autofocus required placeholder="Email or login" type="text"> <!-- type="email"> -->
+							</div> <!-- input-group.// -->
+						</div> <!-- form-group// -->
+						<div class="form-group">
+							<div class="input-group">
+								<div class="input-group-prepend">
+										<span class="input-group-text"> <span class="oi oi-lock-locked"></span></span>
+								</div>
+								<input name="password" class="form-control" required placeholder="******" type="password">
+							</div> <!-- input-group.// -->
+						</div> <!-- form-group// -->
+						<div class="form-group">
+							<div class="row px-3 mb-4">
+								<div class="custom-control custom-checkbox custom-control-inline">
+									<input id="chk2" type="checkbox" name="chk" class="custom-control-input">
+									<label for="chk2" class="custom-control-label text-sm">Remember me</label>
+								</div>
+								<a href="#" class="ml-auto mb-0 text-sm">Forgot Password?</a>
+							</div> <!-- row px-3 mb-4// -->  
+						</div> <!-- form-group// -->  
+						<button type="submit" class="btn btn-primary btn-block"> Login  </button>
+					</form>
+				</div>
+			</div>
+		</div>
+    </div>
+  </div>
+{% endblock %}

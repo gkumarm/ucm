@@ -1,0 +1,19 @@
+{% extends "uauth/base.html" %}
+
+{% block content %}
+<div class="container">
+	<div class="row">
+        <div class="col-md-12">
+            <div class="error-template">
+            	<H2>Server Error <em>(500)</em></H2>
+				<div class="error-details">There was an error in processing your request.  Try after sometime or contact Administrator</div>
+                <div class="error-actions">
+                    <a href="http://www.jquery2dotnet.com" class="btn btn-primary btn-lg"><span class="glyphicon glyphicon-home"></span>
+                        Take Me Home </a>
+					<a href="http://www.jquery2dotnet.com" class="btn btn-default btn-lg"><span class="glyphicon glyphicon-envelope"></span> Contact Support </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

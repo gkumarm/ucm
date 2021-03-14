@@ -1,0 +1,58 @@
+{% extends "uauth/base.html" %}
+{% load widget_tweaks %}
+{% load static %}
+{% load ucm_extras %}
+{% block content %}
+<br>
+<div class="container">
+<div class="jumbotron">
+  <div class="card-columns">
+    {% for val in userTopic %}
+      <div class="card">
+        <img class="card-img-top" src="{% static val.topic.imagename %}" alt="Card image cap">
+        <div class="card-body">
+          <h5 class="card-title">{{val.topic.title}}</h5>
+  <p class="card-text">{{val.topic.description|truncatechars:150}}</p>
+          <p class="card-text">
+            <small class="text-muted">
+              Created by: {{val.topic.cuser}}<br>
+              Created date: {{val.topic.cdate}}<br>
+              Modified date: {{val.topic.mdate}}<br>
+            </small>
+          </p>
+          <div>
+            <small class="text-muted">Progress:</small>
+            <div class="progress">
+              {% for prog in unmSummary %}
+                {% if prog.usertopic_id == val.id %}
+                  <div class="progress-bar {{ prog.currdeck|progress_get_class_name }}" role="progressbar" 
+                    style="width: {{prog.percentage}}%" aria-valuenow="{{prog.percentage}}" 
+                    aria-valuemin="0" aria-valuemax="100">
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          <br>    
+          <a class="btn btn-primary" href="{% url 'ucm:review' val.id %}">Resume Study</a>
+        </div>
+      </div>
+    {% endfor %}
+</div>
+
+</div>
+</div>
+
+<script>
+  $('#dropdown-3').click(function(){
+       $('.dropdown-menu').toggleClass('show');
+   });  
+</script>
+
+{% endblock %}
+<!--      {% render_field val class="form-control" %} -->
+
+
+<!-- Progress bar HTML -->
+
+    
