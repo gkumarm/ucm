@@ -15,9 +15,11 @@
       </h1>
     {% elif val.ntype == "text" %}
       <p class="text-break fs-1">{{ val.ndata }}
+        {% if val.audio %}        
         <input 
           onclick="audioPlay('{{request.scheme}}://{{request.META.HTTP_HOST}}{% static val.audio %}');"
           type='button' value='🔊 Play' />
+        {% endif %}          
       </p>
     {% elif val.ntype == "example" %}
       <p class="text-break fs-1">{{ val.ndata }}
@@ -34,7 +36,7 @@
     {% else %}
     {% endif %}
     {% if forloop.first %}
-      {% if val.audio %} {
+      {% if val.audio %}
         <input class="btn btn-success" 
           onclick="audioPlay('{{request.scheme}}://{{request.META.HTTP_HOST}}{% static val.audio %}');" 
           type='button' value='🔊 Play' />
