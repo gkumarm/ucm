@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>UCMem.IO</title>
-    <link rel="shortcut icon" href="{% static 'ucm/img/favicon.ico' %}">
+    <link rel="shortcut icon" href="{% static 'ucm/img/ucm/favicon.ico' %}">
 
     <script type="text/javascript" src="/static/jquery-3.3.1/js/jquery.min.js"></script>    
     <script type="text/javascript" src="/static/popper.js-1.14.3/js/popper.min.js"></script>
@@ -28,7 +28,7 @@
   <body>
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd;">
       <a class="navbar-brand" href="{% url 'ucm:home' %}">
-        <img src="{% static 'ucm/img/UCMem_Logo.jpg' %}" width="50" height="50" class="d-inline-block align-middle" alt="UCMem.IO" loading="lazy"/>
+        <img src="{% static 'ucm/img/ucm/ucmlogo.jpg' %}" width="50" height="50" class="d-inline-block align-middle" alt="UCMem.IO" loading="lazy"/>
         <span class="font-weight-bold">&nbsp;UCMem</span>
       </a>
 
@@ -46,7 +46,7 @@
               <a aria-expanded="false" aria-haspopup="true" 
                 class="font-weight-bold nav-link dropdown-toggle" 
                 data-toggle="dropdown" href="#" role="button">
-                {{request.user.username}}
+                {{request.user.first_name}}
               </a>
               <div class="dropdown-menu">
                 <a class="dropdown-item" href="{% url 'uauth:logout' %}">Logout</a>

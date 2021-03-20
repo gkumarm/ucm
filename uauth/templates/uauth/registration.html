@@ -5,19 +5,107 @@
 {% block content %}
 {{ form.media }}
 <br>
-<div class="container">
-	<div class="jumbotron">
-		{% if registered or request.user.is_authenticated %}
-			<h1 class="display-6">Thank you for registering!</h1>
+<div  class="container">
+	<div  class="row justify-content-center">
+		<div  class="col-5"><br>
+		{% if request.user.is_authenticated %}
+			<h1 class="text-center">Already Registered</h1><br>
+			<p class="text-center">
+				<b>
+					<a href="{% url 'uauth:login' %}" class="ml-auto mb-0 text-sm">Log In</a>&nbsp;|&nbsp;
+					<a href="{% url 'uauth:logout' %}" class="ml-auto mb-0 text-sm">Log Out</a>
+				</b>
+			</p>
+		{% elif registered %}
+			<div  class="card">
+				<div  class="card-body">
+					<h4  class="card-title text-center">Thank you for registering!</h4>		
+					<p class="text-center">
+						<b>
+							<a href="{% url 'ucm:home' %}" class="ml-auto mb-0 text-sm">Log In</a>
+						</b>
+					</p>
+				</div>
+			</div>
 		{% else %}
-			<h1 class="display-6">Regsiter here...</h1>
-			<hr class="my-4">
-			<form enctype="multipart/form-data" method="POST">
-				{% csrf_token %}
-          		{{ user_form.as_p }}
-          		<input type="submit" name="" value="Register">
-        	</form>
-		{% endif %}
-	</div>
-</div>
+			<h1  class="text-center">Sign Up</h1><br>
+			<div  class="card">
+				<div  class="card-body">
+					<h4  class="card-title">Sign up with UCMem here!</h4>
+					<hr>
+					<form method="post" action="{% url 'uauth:register' %}">
+						{% csrf_token %}
+						<div class="form-group">
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text"><span class="oi oi-person"></span></span>
+								</div>
+								<input name="first_name" class="form-control" type="text" autofocus required 
+									placeholder="Full Name"> <!-- type="email"> -->
+							</div> <!-- input-group.// -->
+						</div> <!-- form-group// -->						
+						<div class="form-group">
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text"><span class="oi oi-envelope-closed"></span></span>
+								</div>
+								<input name="username" class="form-control" type="email" required
+									placeholder="Email" > <!-- > -->
+							</div> <!-- input-group.// -->
+						</div> <!-- form-group// -->
+						<div class="form-group">
+							<div class="input-group">
+								<div class="input-group-prepend">
+										<span class="input-group-text">.<span class="oi oi-lock-locked"></span></span>
+								</div>
+								<input id = "password1" name="password1" class="form-control" required 
+									placeholder="******" type="password">
+							</div> <!-- input-group.// -->
+						</div>
+						<div class="form-group">							
+							<div class="input-group">
+								<div class="input-group-prepend">
+										<span class="input-group-text">.<span class="oi oi-lock-locked"></span></span>
+								</div>
+								<input id = "password2" name="password2" class="form-control" required 
+									placeholder="Repeat password" type="password">
+							</div> <!-- input-group.// -->							
+						</div> <!-- form-group// -->
+
+						<div class="form-group">
+							<div class="row px-3 mb-4">
+								<div class="custom-control custom-checkbox custom-control-inline">
+									<input id="notificationflag" type="checkbox" checked name="notificationflag" 
+										class="custom-control-input checkbox-success">
+									<label for="notificationflag" class="custom-control-label text-sm">
+										Yes, Send me notifications with product & service updates, personal
+										recommendations and exclusive deals from UCMem
+									</label>
+								</div><br>
+								<div class="custom-control custom-checkbox custom-control-inline">
+									<input id="agreementflag" type="checkbox" name="agreementflag" required
+										class="custom-control-input checkbox-success">
+									<label for="agreementflag" class="custom-control-label text-sm">
+										Yes, I understand and agree to the UcMem Terms of Service, 
+										including the User Agreement and Privacy Policy
+									</label>
+								</div>
+							</div> <!-- row px-3 mb-4// -->  
+						</div> <!-- form-group// -->  
+
+						<button  type="submit"  class="btn btn-success btn-block"><b>Create My Account</b></button>
+						<div class="form-group">
+							<div class="row px-3 mb-4">
+									<p>Already have an account? <b> 
+										<a href="{% url 'ucm:home' %}" class="ml-auto mb-0 text-sm">Log In</a>
+									</p>
+							</div> <!-- row px-3 mb-4// -->  
+						</div> <!-- form-group// -->  						
+					</form>
+				</div>
+			</div>
+			{% endif %}
+		</div>
+    </div>
+  </div>
 {% endblock %}
