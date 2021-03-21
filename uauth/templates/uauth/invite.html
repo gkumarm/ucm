@@ -1,0 +1,58 @@
+<!--users/templates/registration/login.html-->
+{% extends './base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+{{ form.media }}
+<br>
+<div  class="container">
+	<div  class="row justify-content-center">
+		<div  class="col-5"><br>
+			<h1  class="text-center">Invite</h1><br>
+			<div  class="card">
+				<div  class="card-body">
+					<h4  class="card-title">Invite others to join UCMem!</h4>
+					<hr>
+					<form method="post" action="{% url 'uauth:invite' %}">
+						{% csrf_token %}
+						<div class="form-group">
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text"><span class="oi oi-person"></span></span>
+								</div>
+								<input name="first_name" class="form-control" type="text" autofocus required 
+									placeholder="Full Name"> <!-- type="email"> -->
+							</div> <!-- input-group.// -->
+						</div> <!-- form-group// -->						
+						<div class="form-group">
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text"><span class="oi oi-envelope-closed"></span></span>
+								</div>
+								<input name="username" class="form-control" type="email" required
+									placeholder="Email" > <!-- > -->
+							</div> <!-- input-group.// -->
+						</div> <!-- form-group// -->
+
+						<div class="form-group">
+							<div class="row px-3 mb-4">
+								<div class="custom-control custom-checkbox custom-control-inline">
+									<input id="agreementflag" type="checkbox" name="agreementflag" required
+										class="custom-control-input checkbox-success">
+									<label for="agreementflag" class="custom-control-label text-sm">
+										Yes, I understand and agree to the UcMem Terms of Service
+										in inviting others to join UCMem,
+										including the User Agreement and Privacy Policy
+									</label>
+								</div>
+							</div> <!-- row px-3 mb-4// -->  
+						</div> <!-- form-group// -->  
+
+						<button  type="submit"  class="btn btn-success btn-block"><b>Invite</b></button>
+					</form>
+				</div>
+			</div>
+		</div>
+    </div>
+  </div>
+{% endblock %}

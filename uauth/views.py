@@ -17,6 +17,30 @@ def ulogout(request):
 	messages.success(request, 'You are logged out!')	
 	return HttpResponseRedirect(reverse('uauth:login'))
 
+@login_required
+def uinvite(request):
+	if request.method == 'POST':
+		print (request.POST)
+		to_name  = request.POST.get ('first_name', None)
+		to_email = request.POST.get ('username', None)
+		if to_name != None and to_email != None:
+#		TODO:// Validate user inputs and keep an invite log with hash
+			util.send_invitation_email (to_name,to_email, request)
+
+			context = {
+				'message': [
+					'Invitation sent to ' + to_name,
+					'Email is addressed to ' + to_email,
+					],
+				'first_name': request.user.first_name,
+				'action': 'Return to UCMem Home',
+				'actionurl': reverse('ucm:home'),
+			}
+			return render(request, 'uauth/message_box.html', {'context':context})
+
+	user_form = UserForm()
+	return render(request,'uauth/invite.html',{'user_form':user_form,})
+
 def uregister(request):
 	registered = False
 	if request.method == 'POST':
