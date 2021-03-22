@@ -8,7 +8,9 @@ from django.template.loader import render_to_string
 from django.shortcuts import render, redirect
 from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
+from django.db import connection, transaction
 
+from ucm.models import UserTopic
 def encrypt_sha256 (hash_string):
 	sha_signature = hashlib.sha256 (hash_string.encode()).hexdigest()
 
@@ -19,7 +21,23 @@ def encrypt_sha256 (hash_string):
 
 	return sha_signature
 
-def send_invitation_email (to_name, to_email, request):
+def subscribe_topic (user_id, topic_id, request):
+
+	ut = UserTopic (
+		user_id=user_id, topic_id=topic_id, 
+		srmethod='LBOXP', maxdeck=5, dclimit=5)
+	ut.save ()
+
+	sqlUserNote = """
+		insert into ucm_usernotem (
+			currdeck, notem_id, usertopic_id, cdate, mdate) 
+			select 0, id,%s, datetime ('now'), datetime ('now') from ucm_notem where topic_id=%s
+	"""
+	cursor = connection.cursor()
+	cursor.execute(sqlUserNote, [ut.id, topic_id])
+#	transaction.commit_unless_managed()
+
+def send_invitation_email (to_name, to_email, hash_string, request):
 	currsite = get_current_site(request)
 
 	sender = "UCMem <gk.malattiri@gmail.com>"
@@ -38,7 +56,8 @@ def send_invitation_email (to_name, to_email, request):
 				it has everything to get your back!',
 			],
 		'first_name': request.user.first_name,
-		'site_root': "http://" + currsite.domain,		
+		'site_root': "http://" + currsite.domain,
+		'hash_string': hash_string,
 	}	
 
 	html_template = 'uauth/invite_mail_template.html'

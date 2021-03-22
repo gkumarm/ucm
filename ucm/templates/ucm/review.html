@@ -104,7 +104,11 @@
       <p class="text-break fs-1">Your topic has no more cards left to learn. Either all the notes
           of this topic is matured or none eligible for study [{{ topic }}].</p>
       <a class="btn btn-primary" href="{% url 'ucm:home' %}">Ok</a>
-    {% endif %}      
+    {% endif %}
+    {% if flag == "not_subscribed" %}
+      <p class="text-break fs-1">The topic selected is not in your subscription list.  Subscribed first before learning [{{ topic }}].</p>
+      <a class="btn btn-primary" href="{% url 'ucm:home' %}">Ok</a>
+    {% endif %}
   {% endfor %}
   </div>
 </div>

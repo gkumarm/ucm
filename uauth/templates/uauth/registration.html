@@ -41,7 +41,8 @@
 									<span class="input-group-text"><span class="oi oi-person"></span></span>
 								</div>
 								<input name="first_name" class="form-control" type="text" autofocus required 
-									placeholder="Full Name"> <!-- type="email"> -->
+									placeholder="Full Name" 
+									value="{{ user_form.first_name.value|default_if_none:'' }}">
 							</div> <!-- input-group.// -->
 						</div> <!-- form-group// -->						
 						<div class="form-group">
@@ -50,7 +51,8 @@
 									<span class="input-group-text"><span class="oi oi-envelope-closed"></span></span>
 								</div>
 								<input name="username" class="form-control" type="email" required
-									placeholder="Email" > <!-- > -->
+									placeholder="Email" 
+									value="{{ user_form.username.value|default_if_none:'' }}">
 							</div> <!-- input-group.// -->
 						</div> <!-- form-group// -->
 						<div class="form-group">

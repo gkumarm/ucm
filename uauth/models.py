@@ -19,3 +19,12 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
 	instance.profile.save()
+
+class Invitation (models.Model):
+	cuser      = models.ForeignKey(User,on_delete=models.CASCADE)
+	cdate      = models.DateTimeField (auto_now_add=True)
+	mdate      = models.DateTimeField (auto_now=True)
+	hash_string= models.CharField (max_length=256,  unique=True)
+	to_name    = models.CharField (max_length=60)
+	to_email   = models.CharField (max_length=80)
+	acceptedflag = models.BooleanField (default=False)

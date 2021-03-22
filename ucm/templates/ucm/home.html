@@ -39,6 +39,27 @@
       </div>
     {% endfor %}
 </div>
+<p>Not subscribed topics</p>
+  <div class="card-columns">
+    {% for topic in otherTopic %}
+      <div class="card">
+        <img class="card-img-top" src="{% static topic.imagename %}" alt="Card image cap">
+        <div class="card-body">
+          <h5 class="card-title">{{topic.title}}</h5>
+  <p class="card-text">{{topic.description|truncatechars:150}}</p>
+          <p class="card-text">
+            <small class="text-muted">
+              Created by: {{topic.cuser}}<br>
+              Created date: {{topic.cdate}}<br>
+              Modified date: {{topic.mdate}}<br>
+            </small>
+          </p>
+          <br>
+          <a class="btn btn-primary" href="{% url 'ucm:subscribe' topic.id %}">Subscribe Topic</a>
+        </div>          
+      </div>
+    {% endfor %}
+</div>
 
 </div>
 </div>

@@ -12,10 +12,11 @@ from django.utils import timezone
 from datetime import datetime
 
 from .decorators import query_debugger
-from .models import UserNotem, Noted, UserNotemLog, UserTopic, UserLearningDeck, ReviewLog
+from .models import UserNotem, Noted, UserNotemLog, UserTopic, UserLearningDeck, ReviewLog, Topic
 from .forms import ReviewLogForm
-from . import constants
 
+from . import constants
+from uauth import util as util
 from rest_framework import views
 from rest_framework.response import Response
 from .serializers import YourSerializer
@@ -38,12 +39,42 @@ def buildHome (request):
 		# rand_id = random.randint(1, 100)
 		unmSummary = get_progress (request.user)
 		userTopic = UserTopic.objects.filter (user=request.user)
+		utvl = userTopic.values_list('topic_id',flat=True)
+		otherTopic = Topic.objects.exclude (id__in=utvl)
 #		print (userTopic)
-		return render(request, "ucm/home.html", {'userTopic': userTopic, 'unmSummary':unmSummary})
+		return render(request, "ucm/home.html", {
+			'userTopic' : userTopic,
+			'unmSummary': unmSummary,
+			'otherTopic': otherTopic,}
+		)
 	else:
 		raise Http404
-#		raise Exception('Unsupported method')
-#		return HttpResponseForbidden("Unsupported method")
+
+@login_required
+def subscribe (request, pk=0):
+	if request.method == 'GET':
+		print ("subscribe-subscribe-subscribe-subscribe:", pk)		
+		t=Topic.objects.filter (pk=pk).first()
+		if not t:
+			messages.info (request, "Selected topic not found for subscription")
+		else:
+			messages.info (request, "Topic [" + t.title + "] subscribed successfully. Enjoy learning")
+
+		util.subscribe_topic (request.user.id, pk, request)
+
+		return HttpResponseRedirect(reverse('ucm:home'))
+# 		unmSummary = get_progress (request.user)
+# 		userTopic = UserTopic.objects.filter (user=request.user)
+# 		utvl = userTopic.values_list('topic_id',flat=True)
+# 		otherTopic = Topic.objects.exclude (id__in=utvl)
+# #		print (userTopic)
+# 		return render(request, "ucm/home.html", {
+# 			'userTopic' : userTopic,
+# 			'unmSummary': unmSummary,
+# 			'otherTopic': otherTopic,}
+# 		)
+# 	else:
+# 		raise Http404
 
 @query_debugger
 @login_required (redirect_field_name='next')
@@ -111,14 +142,15 @@ def review (request, pk=0, learn_more=False, template_name='ucm/review.html'):
 		# 3. If no pending,
 		# 3.1 If curr date is same as modified date in user topic, then ask user whether to create next learning deck
 		# 3.2 If curr date is not same, create new learning deck
+		print ('User---------> ', request.user)
+		ut = UserTopic.objects.filter (id=pk, user=request.user).first()
+		if not ut:
+			messages.info (request, "Not a subscribed topic")
+			return render(request, template_name, {'flag':'not_subscribed', 'topic':pk})
+
 		filters = Q(Q(usernotem__usertopic_id=pk))# & Q(usernotem__currdeck=1))
 		uld = UserLearningDeck.objects.filter (filters).first()
 		if not uld:
-			ut = UserTopic.objects.filter (id=pk).first()
-			if not ut:
-				messages.error (request, "Error in accessing topic")
-				raise Http404
-
 			if datetime.strftime(timezone.now(), '%Y%m-%d') == datetime.strftime(ut.mdate, '%Y%m-%d') and learn_more == False:
 				messages.success (request, "You have no cards pending to learn today")
 				return render(request, template_name, {'flag':'learn_more', 'topic':pk})

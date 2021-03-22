@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.contrib.auth.forms import UserCreationForm
 
 from .forms import UserForm
-from .models import Profile
+from .models import Profile, Invitation
 from . import util as util
 
 @login_required
@@ -24,8 +24,12 @@ def uinvite(request):
 		to_name  = request.POST.get ('first_name', None)
 		to_email = request.POST.get ('username', None)
 		if to_name != None and to_email != None:
-#		TODO:// Validate user inputs and keep an invite log with hash
-			util.send_invitation_email (to_name,to_email, request)
+#			TODO:// Validate user inputs and keep an invite log with hash
+			hash_string = util.encrypt_sha256 (to_email)
+			inv = Invitation (cuser=request.user,hash_string=hash_string, 
+					to_name=to_name, to_email=to_email)
+			util.send_invitation_email (to_name,to_email, hash_string, request)
+			inv.save ()
 
 			context = {
 				'message': [
@@ -35,6 +39,7 @@ def uinvite(request):
 				'first_name': request.user.first_name,
 				'action': 'Return to UCMem Home',
 				'actionurl': reverse('ucm:home'),
+				'hash_string': hash_string,
 			}
 			return render(request, 'uauth/message_box.html', {'context':context})
 
@@ -50,17 +55,17 @@ def uregister(request):
 		post ['email'] = post ['username']
 		user_form = UserForm(data=post)
 		if user_form.is_valid():
-			validatehash = util.encrypt_sha256 (post ['username'] )
+			hash_string = util.encrypt_sha256 (post ['username'] )
 			user = user_form.save()
 			user.profile.notificationflag = True if post.get ('notificationflag', 'off') == 'on' else False
-			user.profile.validatehash = validatehash
+			user.profile.hash_string = hash_string
 			user.is_active = False
 #			user.set_password(user.password)
 			user.save()
 			registered = True
 
 			util.send_user_verification_mail (post ['username'],
-				validatehash, request)
+				hash_string, request)
 
 			context = {
 				'message': [
@@ -76,15 +81,50 @@ def uregister(request):
 		else:
 			messages.error (request, user_form.errors)
 			print(user_form.errors)
+	elif request.method == 'GET':
+		hash_string = request.GET.get ('upn', None)
+		if hash_string:
+			inv = Invitation.objects.filter (hash_string=hash_string).first()
+			if inv:
+				if inv.acceptedflag == True:
+					context = {
+						'message': [
+							'This join invitation is already completed',
+							], 
+						'first_name': inv.to_name,
+						'action': 'Login to UCMem',
+						'actionurl': reverse('uauth:login'),
+					}
+					return render(request, 'uauth/message_box.html', {'context':context})
+				else:
+					print ("========== Creating user_form =========")
+					user_form = UserForm(initial={
+						'username': inv.to_email, 
+						'first_name': inv.to_name})
+			else:
+				context = {
+					'message': [
+						'We received an invalid invitation request.',
+						'Please try again the register option.',
+						],
+					'action': 'Return to UCMem Home',
+					'actionurl': reverse('ucm:home'),
+				}
+				return render(request, 'uauth/message_box.html', {'context':context})
+		else:
+			context = {
+				'message': [
+					'We received an incomplete registration request',
+					'Please try again the register option.',
+					], 
+				'action': 'Return to UCMem Home',
+				'actionurl': reverse('ucm:home'),
+			}
+			return render(request, 'uauth/message_box.html', {'context':context})
 	else:
 		user_form = UserForm()
-	
-	return render(request,'uauth/registration.html',
-					{
-						'user_form':user_form,
-						'registered':registered
-					}
-				)
+
+	return render(request,'uauth/registration.html',{'user_form':user_form,})
 
 def uverify (request):
 	if request.method == 'GET':
