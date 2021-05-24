@@ -19,3 +19,12 @@ def expluralize(nCount,sText):
 		return str(nCount) + ' ' + sText + 's'
 	else:
 		return str(nCount) + ' ' + sText
+
+#@register.filter(name='iif')
+@register.simple_tag(name='iif')
+def iif(s1,s2,s3):
+#	print (r"S1 {}, S2 {}, S3 {}".format (s1,s2,s3))
+	if s1 == s2:
+		return s3
+	else:
+		return ''

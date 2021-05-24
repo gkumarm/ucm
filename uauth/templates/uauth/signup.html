@@ -1,0 +1,90 @@
+{% extends "ucm/basen.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% block content %}
+{{ form.media }}
+<div class="container d-flex flex-column">
+	<div class="row align-items-center justify-content-center no-gutters">
+		<div class="col-lg-5 col-md-8 py-8 py-xl-5"> 
+
+			<!-- Card -->
+			<div class="card shadow">
+				<!-- Card body -->
+				<div class="card-body p-6">
+					<div class="mb-4">
+						<a href="{% url 'ucm:home' %}"><img src="{% static 'ucm/img/ucm/ucmlogo-small.jpg'%}" class="mb-4" alt=""></a>
+						<h1 class="mb-1 font-weight-bold">Sign up</h1>
+						{% if request.user.is_authenticated %}
+							<h3 class="text-center">
+								You are already Signed-in.  Attempting again will Sign-out before sign-in
+							</h3>
+						{% else %}
+							<span>Already have an account? <a href="{% url 'uauth:signin' %}" class="ml-1">Sign in</a></span>
+						{% endif %}						
+						
+					</div>
+					<!-- Form -->
+					<form method="post" action="{% url 'uauth:signup' %}">
+						{% csrf_token %}
+
+						<!-- First Name -->
+						<div class="form-group">
+							<label for="first_name" class="form-label">Name <span class="required">*</span></label>
+							<input type="text" id="first_name" class="form-control" name="first_name" 
+								placeholder="Your Name" value="{{ context.userForm.first_name.value }}" required autofocus/>
+						</div>
+						<!-- email address/user name -->
+						<div class="form-group">
+							<label for="username" class="form-label">Email address (Login id) <span class="required">*</span></label>
+							<input type="email" id="username" class="form-control" name="username" 
+								placeholder="Email address here" value="{{ context.userForm.username.value }}"								
+								required>
+						</div>
+						<!-- Password -->
+						<div class="form-group">
+							<label for="password1" class="form-label">Password <span class="required">*</span></label>
+							<input type="password" id="password1" class="form-control" name="password1"
+								placeholder="**************" required>
+						</div>
+						<!-- Checkbox -->
+						<div class="d-lg-flex justify-content-between align-items-center mb-4">
+							<div class="custom-control custom-checkbox">
+								<input type="checkbox" class="custom-control-input" id="agreementflag" name="agreementflag" required>
+								<label class="custom-control-label " for="agreementflag">
+									Yes, I understand and agree to the UcMem Terms of Service, including the User Agreement and Privacy Policy
+									<span class="required">*</span>
+								</label>
+							</div>
+						</div>
+
+						<div>
+							<!-- Button -->
+							<button type="submit" class="btn btn-primary btn-block"> Sign Up  </button>							
+						</div>
+						<hr class="my-4">
+						<div class="mt-4 text-center">
+							<!--Facebook-->
+							<a href="#!" class="btn-social btn-social-outline btn-facebook">
+								<i class="fab fa-facebook"></i>
+							</a>
+							<!--Twitter-->
+							<a href="#!" class="btn-social btn-social-outline btn-twitter">
+								<i class="fab fa-twitter"></i>
+							</a>
+							<!--LinkedIn-->
+							<a href="#!" class="btn-social btn-social-outline btn-linkedin">
+								<i class="fab fa-linkedin"></i>
+							</a>
+							<!--GitHub-->
+							<a href="#!" class="btn-social btn-social-outline btn-github">
+								<i class="fab fa-github"></i>
+							</a>
+						</div>
+					</form>
+				</div>
+			</div>
+			
+		</div>
+	</div>
+</div>
+{% endblock %}

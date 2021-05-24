@@ -1,5 +1,4 @@
-<!--users/templates/registration/login.html-->
-{% extends './base.html' %}
+{% extends "ucm/basen.html" %}
 {% load crispy_forms_tags %}
 
 {% block content %}
@@ -9,20 +8,20 @@
 	<div  class="row justify-content-center">
 		<div  class="col-5"><br>
 		{% if request.user.is_authenticated %}
-			<h1 class="text-center">Already Registered</h1><br>
+			<h1 class="text-center">Already Signed-up</h1><br>
 			<p class="text-center">
 				<b>
-					<a href="{% url 'uauth:login' %}" class="ml-auto mb-0 text-sm">Log In</a>&nbsp;|&nbsp;
-					<a href="{% url 'uauth:logout' %}" class="ml-auto mb-0 text-sm">Log Out</a>
+					<a href="{% url 'uauth:signin' %}" class="ml-auto mb-0 text-sm">Log In</a>&nbsp;|&nbsp;
+					<a href="{% url 'uauth:signout' %}" class="ml-auto mb-0 text-sm">Log Out</a>
 				</b>
 			</p>
 		{% elif registered %}
 			<div  class="card">
 				<div  class="card-body">
-					<h4  class="card-title text-center">Thank you for registering!</h4>		
+					<h4  class="card-title text-center">Thank you for Signing up!</h4>		
 					<p class="text-center">
 						<b>
-							<a href="{% url 'ucm:home' %}" class="ml-auto mb-0 text-sm">Log In</a>
+							<a href="{% url 'ucm:home' %}" class="ml-auto mb-0 text-sm">Sign In</a>
 						</b>
 					</p>
 				</div>
@@ -33,7 +32,7 @@
 				<div  class="card-body">
 					<h4  class="card-title">Sign up with UCMem here!</h4>
 					<hr>
-					<form method="post" action="{% url 'uauth:register' %}">
+					<form method="post" action="{% url 'uauth:signup' %}">
 						{% csrf_token %}
 						<div class="form-group">
 							<div class="input-group">

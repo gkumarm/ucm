@@ -1,0 +1,92 @@
+{% load static %}
+{% load ucm_extras %}
+<div class="tab-pane fade" id="suggested" role="tabpanel" aria-labelledby="suggested-tab">  
+    <div class="row">
+      {% for val in suggestedTopic %}
+      <div class="col-lg-4 col-md-6 col-12">
+        <!-- Card -->
+        <div class="card  mb-4 card-hover">
+          <a href="#!" class="card-img-top"><img src="{{ val.imagefile.url|default:'/media/ucm/images/topic_img_default.jpg'}}" alt=""
+              class="card-img-top rounded-top"></a>
+          <!-- Card body -->
+          <div class="card-body">
+            <h3 class="h4 mb-2 text-truncate-line-2 "><a href="#!" class="text-inherit">{{val.title}}</a>
+            </h3>
+            <!-- List inline -->
+            <ul class="mb-3  list-inline">
+              <li class="list-inline-item"><i class="far fa-clock mr-1"></i>3h 56m
+              </li>
+              <li class="list-inline-item"><svg class="mr-1 mt-n1" width="16" height="16" viewBox="0 0 16 16"
+                  fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="8" width="2" height="6" rx="1" fill="#754FFE">
+                  </rect>
+                  <rect x="7" y="5" width="2" height="9" rx="1" fill="#DBD8E9">
+                  </rect>
+                  <rect x="11" y="2" width="2" height="12" rx="1" fill="#DBD8E9">
+                  </rect>
+                </svg>Beginner </li>
+            </ul>
+            <div class="lh-1">
+              <span>
+                <i class="mdi mdi-star text-warning mr-n1"></i>
+                <i class="mdi mdi-star text-warning mr-n1"></i>
+                <i class="mdi mdi-star text-warning mr-n1"></i>
+                <i class="mdi mdi-star text-warning mr-n1"></i>
+                <i class="mdi mdi-star text-warning"></i>
+              </span>
+              <span class="text-warning">4.5</span>
+              <span class="font-size-xs text-muted">(9,300)</span>
+            </div>
+          </div>
+          <!-- Card footer -->
+          <div class="card-footer">
+            <div class="row align-items-center no-gutters">
+              <div class="col-auto">
+                <img src="{{val.cuser.profile.imagefile.url|default:'/media/ucm/images/prof_pics/default.jpg'}}" 
+                  class="rounded-circle avatar-xs" alt="">
+              </div>
+              <div class="col ml-2">
+                <span>{{val.cuser.first_name}}</span>
+              </div>
+              <div class="progress mt-3" style="height: 5px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 50%;" aria-valuenow="45"
+                  aria-valuemin="0" aria-valuemax="100"></div>
+              </div>                        
+              <div class="col-auto">
+                <a href="{% url 'ucm:topic_subscribe' val.id %}" class="removeBookmark" >
+                  <i class="fas fa-play-circle fa-2x"></i>
+                </a>
+              </div>
+              <div class="col-auto ml-2">
+                <span class="dropdown">
+                  <a class="text-muted text-decoration-none" href="#!" role="button" id="courseDropdown"
+                      data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      <i class="fe fe-more-vertical"></i>
+                  </a>
+                  <span class="dropdown-menu" aria-labelledby="courseDropdown">
+                      <span class="dropdown-header">Setting </span>
+                      <a class="dropdown-item" href="{% url 'ucm:compose_note' pk=val.id %}"><i class="fe fe-play dropdown-item-icon"></i>Start Review</a>
+                      <a class="dropdown-item" href="{% url 'ucm:compose_topic' pk=val.id %}"><i class="fe fe-edit dropdown-item-icon"></i>View Settings</a>
+                      <a class="dropdown-item" href="{% url 'ucm:topic_share' pk=val.id %}?next={{ request.path }}">
+                        <i class="fe fe-share-2 dropdown-item-icon"></i>Share
+                      </a>                      
+                      <a class="dropdown-item" href="#!"><i class="fe fe-trash dropdown-item-icon"></i>Move to Completed</a>
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      </div>
+    <div class="row">
+      <div class="offset-lg-3 col-lg-6 col-md-12 col-12 text-center mt-5">
+        {% if suggestedTopic|length %}                  
+          <p>You’ve reached the end of the list</p>
+        {% else %}
+          <p>You’ve no suggested topics</p>
+        {% endif %}
+      </div>
+    </div>
+</div>

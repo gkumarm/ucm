@@ -1,0 +1,75 @@
+{% extends "ucm/basen.html" %}
+{% load static %}
+{% block content %}
+<div class="container d-flex flex-column">
+	<div class="row align-items-center justify-content-center no-gutters">
+		<div class="col-lg-5 col-md-8 py-8 py-xl-5"> 
+
+			<!-- Card -->
+			<div class="card shadow">
+				<a href="#!" class="card-img-top"><img src="{{ context.topic.imagefile.url|default:'/media/ucm/images/topic_img_default.jpg'}}" alt=""
+					class="card-img-top rounded-top">
+				</a>
+
+				<!-- Card body -->
+				<div class="card-body">
+					<h3 class="h4 mb-1 text-truncate-line-2 "><a href="#!" class="text-inherit">{{context.topic.title}}</a></h3>
+					<div class="row align-items-center no-gutters">
+						<div class="col-auto">
+							<img src="{{context.topic.cuser.profile.imagefile.url|default:'/media/ucm/images/prof_pics/default.jpg'}}" 
+								class="rounded-circle avatar-xs" alt="">
+						</div>
+						<div class="col ml-2">
+							<span>{{context.topic.cuser.first_name}}</span>
+						</div>
+					</div>
+
+				</div>
+
+				<!-- Card footer -->
+				<div class="card-footer">
+					<h2  class="card-title">Share the Topic</h2>
+					<form method="post" action="{% url 'ucm:topic_share' context.topic.id %}">
+						{% csrf_token %}
+						<input type="hidden" name="next" value="{{ request.GET.next|default:'/'}}">
+						<div class="form-group">
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text"><span class="oi oi-person"></span></span>
+								</div>
+								<input name="first_name" class="form-control" type="text" autofocus required 
+									placeholder="Full Name"> <!-- type="email"> -->
+							</div> <!-- input-group.// -->
+						</div> <!-- form-group// -->						
+						<div class="form-group">
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text"><span class="oi oi-envelope-closed"></span></span>
+								</div>
+								<input name="email" class="form-control" type="email" required
+									placeholder="Email" > <!-- > -->
+							</div> <!-- input-group.// -->
+						</div> <!-- form-group// -->
+
+						<div class="form-group">
+							<div class="row px-3 mb-4">
+								<div class="custom-control custom-checkbox custom-control-inline">
+									<input id="agreementflag" type="checkbox" name="agreementflag" required
+										class="custom-control-input checkbox-success">
+									<label for="agreementflag" class="custom-control-label text-sm">
+										Yes, I understand and agree to the UcMem Terms of Service
+										in sharing UCMem contents with others,
+										including the User Agreement and Privacy Policy
+									</label>
+								</div>
+							</div> <!-- row px-3 mb-4// -->  
+						</div> <!-- form-group// -->  
+
+						<button  type="submit"  class="btn btn-success btn-block"><b>Share Now</b></button>
+					</form>					
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

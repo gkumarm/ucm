@@ -1,0 +1,105 @@
+{% extends "ucm/member.html" %}
+{% load static %}
+{% block mainContentBlock %}
+<div class="col-lg-9 col-md-8 col-12"> <!-- Container for Main content-->
+    <!-- Card -->
+    <div class="card mb-4">
+        <!-- Card header -->
+        <div class="card-header">
+            <h3 class="mb-0">Topics</h3>
+            <span>Manage your topics and its update like live, draft and
+                insight.
+                <a href="{% url 'ucm:compose_topic' 0 %}" class="btn btn-primary btn-sm">Create New Topic</a>
+            </span>
+        </div>
+        <!-- Card body -->
+        <div class="card-body">
+            <!-- Form -->
+            <form class="form-row">
+                <div class="col-lg-9 col-md-7 col-12 mb-lg-0 mb-2">
+                    <input type="search" class="form-control" placeholder="Search Your Topics" />
+                </div>
+                <div class="col-lg-3 col-md-5 col-12">
+                    <select class="selectpicker" data-width="100%">
+                        <option value="">Date Created</option>
+                        <option value="Newest">Newest</option>
+                        <option value="High Rated">High Rated</option>
+                        <option value="Law Rated">Law Rated</option>
+                        <option value="High Earned">High Earned</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <!-- Main Conent table -->    
+        <div class="table-responsive border-0 overflow-y-hidden">
+            <table class="table mb-0 text-nowrap">
+                <thead>
+                    <tr>
+                        <th scope="col" class="border-0">Topic</th>
+                        <th scope="col" class="border-0">Subscribers</th>
+                        <th scope="col" class="border-0">Status</th>
+                        <th scope="col" class="border-0"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for val in context.topics %}                            
+                    <tr>
+                        <td class="border-top-0">
+                            <div class="d-lg-flex">
+                                <div>
+                                    <a href="#!">
+                                        <img src="{{ val.imagefile.url }}" alt="" class="rounded img-4by3-lg" /></a>
+                                </div>
+                                <div class="ml-lg-3 mt-2 mt-lg-0">
+                                    <h4 class="mb-1 h5">
+                                        <a href="#!" class="text-inherit">{{val.title}}</a>
+                                    </h4>
+                                    <ul class="list-inline font-size-xs mb-0">
+                                        <li class="list-inline-item">
+                                            <i class="far fa-clock mr-1"></i>{{val.cdate}}
+                                        </li>
+                                        <li class="list-inline-item">
+                                            <svg class="mr-1 mt-n1" width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                                xmlns="http://www.w3.org/2000/svg">
+                                                <rect x="3" y="8" width="2" height="6" rx="1" fill="#754FFE"></rect>
+                                                <rect x="7" y="5" width="2" height="9" rx="1" fill="#DBD8E9"></rect>
+                                                <rect x="11" y="2" width="2" height="12" rx="1" fill="#DBD8E9"></rect>
+                                            </svg>
+                                        </li>
+                                    </ul>
+                                    <p>{{val.cuser}}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="border-top-0">11,200
+                            <span class="text-warning">4.5<br><i class="mdi mdi-star"></i></span>(3,250)
+                        </td>
+                        <td class="border-top-0">
+                            <span class="badge badge-success">Live</span>
+                        </td>
+                        <td class="text-muted border-top-0">
+                            <span class="dropdown">
+                                <a class="text-muted text-decoration-none" href="#!" role="button" id="courseDropdown"
+                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fe fe-more-vertical"></i>
+                                </a>
+                                <span class="dropdown-menu" aria-labelledby="courseDropdown">
+                                    <a class="dropdown-item" href="{% url 'ucm:compose_note' pk=val.id %}">
+                                        <i class="fe fe-edit dropdown-item-icon"></i>Edit Notes</a>
+                                    <a class="dropdown-item" href="{% url 'ucm:compose_topic' pk=val.id %}">
+                                        <i class="fe fe-edit-2 dropdown-item-icon"></i>Edit Topic</a>
+                                    <a class="dropdown-item" href="{% url 'ucm:topic_share' pk=val.id %}?next={{ request.path }}">
+                                        <i class="fe fe-share-2 dropdown-item-icon"></i>Share</a>
+                                    <a class="dropdown-item" href="#!">
+                                        <i class="fe fe-lock dropdown-item-icon"></i>Enable/Disable</a>
+                                </span>
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div> <!-- End of Main Content table-->                        
+    </div>
+</div> <!-- End of Main Content container-->
+{% endblock mainContentBlock %}

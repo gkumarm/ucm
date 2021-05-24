@@ -1,25 +1,34 @@
 from django.http import HttpResponseRedirect, Http404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.middleware.csrf import CsrfViewMiddleware
 from django.core.exceptions import ObjectDoesNotExist
 import random
 from django.db.models import Q, Count
+from django.db import transaction
 import logging
 from django.utils import timezone
 from datetime import datetime
+from django.views.generic import (
+    CreateView, DetailView, FormView, ListView, TemplateView
+)
+from django.views.generic.detail import SingleObjectMixin
 
 from .decorators import query_debugger
-from .models import UserNotem, Noted, UserNotemLog, UserTopic, UserLearningDeck, ReviewLog, Topic
-from .forms import ReviewLogForm
+from django.contrib.auth.models import User
+from .models import UserNotem, Noted, UserNotemLog, UserTopic, UserLearningDeck, ReviewLog, Notem, Topic, Invitation
+from .forms import ReviewLogForm, TopicForm, NotedFormSet, NotemFormSet
+from uauth.forms import UserForm, ProfileForm
 
 from . import constants
 from uauth import util as util
 from rest_framework import views
 from rest_framework.response import Response
 from .serializers import YourSerializer
+from django.forms import inlineformset_factory
+from django.core.exceptions import ValidationError
 
 # l = logging.getLogger('django.db.backends')  
 # l.setLevel(logging.DEBUG)
@@ -28,57 +37,15 @@ from .serializers import YourSerializer
 # Create your views here.
 def home(request):
 	if request.user.is_authenticated:
-		return buildHome (request)
-#		return HttpResponseRedirect(reverse('ucm:review'))
+		return member_dashboard (request)
 	else:
-		return render(request, "uauth/login.html")
-
-@login_required
-def buildHome (request):
-	if request.method == 'GET':
-		# rand_id = random.randint(1, 100)
-		unmSummary = get_progress (request.user)
-		userTopic = UserTopic.objects.filter (user=request.user)
-		utvl = userTopic.values_list('topic_id',flat=True)
-		otherTopic = Topic.objects.exclude (id__in=utvl)
-#		print (userTopic)
-		return render(request, "ucm/home.html", {
-			'userTopic' : userTopic,
-			'unmSummary': unmSummary,
-			'otherTopic': otherTopic,}
-		)
-	else:
-		raise Http404
-
-@login_required
-def subscribe (request, pk=0):
-	if request.method == 'GET':
-		print ("subscribe-subscribe-subscribe-subscribe:", pk)		
-		t=Topic.objects.filter (pk=pk).first()
-		if not t:
-			messages.info (request, "Selected topic not found for subscription")
-		else:
-			messages.info (request, "Topic [" + t.title + "] subscribed successfully. Enjoy learning")
-
-		util.subscribe_topic (request.user.id, pk, request)
-
-		return HttpResponseRedirect(reverse('ucm:home'))
-# 		unmSummary = get_progress (request.user)
-# 		userTopic = UserTopic.objects.filter (user=request.user)
-# 		utvl = userTopic.values_list('topic_id',flat=True)
-# 		otherTopic = Topic.objects.exclude (id__in=utvl)
-# #		print (userTopic)
-# 		return render(request, "ucm/home.html", {
-# 			'userTopic' : userTopic,
-# 			'unmSummary': unmSummary,
-# 			'otherTopic': otherTopic,}
-# 		)
-# 	else:
-# 		raise Http404
+		context = {'ptitle': "Home"}
+		return render(request, "ucm/index-non-signed-in.html", {'context': context})
 
 @query_debugger
 @login_required (redirect_field_name='next')
-def review (request, pk=0, learn_more=False, template_name='ucm/review.html'):
+def topic_review (request, pk=0, learn_more=False, template_name='ucm/topic_review.html'):
+	context = {'ptitle': "Review"}	
 	filters = Q()
 	if request.method == 'POST':
 		reason = CsrfViewMiddleware().process_view(request, None, (), {})
@@ -88,13 +55,17 @@ def review (request, pk=0, learn_more=False, template_name='ucm/review.html'):
 			raise PermissionException() # do what you need to do here
 
 		if request.POST.get('post') == 'Post':  # Block for post notes on task
+			print ("topic_review::POST:post================================>>")
 			formReviewLog  = ReviewLogForm (data=request.POST)
 			if formReviewLog.is_valid():
 				unm=formReviewLog.cleaned_data.get ('usernotem')
 				print ('Adding Notes--------------->', request.user, '->', unm.id)
 				formReviewLog.save ()
 				messages.success (request, 'New note added')
-				return HttpResponseRedirect(reverse('ucm:review',  args=(unm.usertopic.id,)))
+				return HttpResponseRedirect(reverse('ucm:topic_review',  args=(unm.usertopic.id,)))
+			else:
+				print ("Post::post::Form Validation failed")
+				print (formReviewLog.errors)
 
 		print (request.POST)
 		nextdeck = 0
@@ -112,7 +83,7 @@ def review (request, pk=0, learn_more=False, template_name='ucm/review.html'):
 		if not uld:
 			errormsg = "Integrity error.  Invalid note details received for learning deck card: " + str (usernoteid)
 			messages.error (request, errormsg)
-			raise ObjectDoesNotExist(errormsg);
+			raise ObjectDoesNotExist(errormsg)
 
 		nextdeck = calculateNextDeck (request, uld, ueval)
 		if nextdeck < 0:
@@ -135,7 +106,7 @@ def review (request, pk=0, learn_more=False, template_name='ucm/review.html'):
 		ut.save ()
 
 #		filters = Q(Q(usernotem__usertopic_id=userNote.usertopic.id) & Q(usernotem__currdeck=0))
-		return HttpResponseRedirect(reverse('ucm:review',  args=(ut.id,)))
+		return HttpResponseRedirect(reverse('ucm:topic_review',  args=(ut.id,)))
 	elif request.method == 'GET':
 		# 1. Check in the learning deck for pendng cards
 		# 2. If pending found, proceed
@@ -146,14 +117,14 @@ def review (request, pk=0, learn_more=False, template_name='ucm/review.html'):
 		ut = UserTopic.objects.filter (id=pk, user=request.user).first()
 		if not ut:
 			messages.info (request, "Not a subscribed topic")
-			return render(request, template_name, {'flag':'not_subscribed', 'topic':pk})
+			return render(request, template_name, {'flag':'not_subscribed', 'topic':pk, 'context':context})
 
 		filters = Q(Q(usernotem__usertopic_id=pk))# & Q(usernotem__currdeck=1))
 		uld = UserLearningDeck.objects.filter (filters).first()
 		if not uld:
 			if datetime.strftime(timezone.now(), '%Y%m-%d') == datetime.strftime(ut.mdate, '%Y%m-%d') and learn_more == False:
 				messages.success (request, "You have no cards pending to learn today")
-				return render(request, template_name, {'flag':'learn_more', 'topic':pk})
+				return render(request, template_name, {'flag':'learn_more', 'topic':pk, 'context':context})
 			else:
 				if not learn_more:
 					messages.success (request, "Creating new learning deck for today")
@@ -201,11 +172,89 @@ def review (request, pk=0, learn_more=False, template_name='ucm/review.html'):
 		formReviewLog = ReviewLogForm (initial={
 			'usernotem': uld.usernotem,
 			'cuser': request.user
-		});
+		})
 
+	return render(request, template_name, {'userNote':uld, 'note':nd, 'topic':pk,
+		'reviewLog':reviewLog, 'formReviewLog':formReviewLog ,'context':context})
 
-	return render(request, template_name, {'userNote':uld, 'note':nd, 
-		'reviewLog':reviewLog, 'formReviewLog':formReviewLog ,})
+@login_required
+def topic_share (request, pk, template_name="ucm/topic-share.html"):
+	context = {'ptitle': "Share Topic"}
+	topic = Topic.objects.filter (pk=pk).first()
+	if not topic:
+		raise ValidationError(r"Topic [{}] is not a valid topic".format (pk))
+
+	context ['topic'] = topic
+	print ("TOPIC: ", topic)
+
+	if request.method == 'POST':
+		print (request.POST)
+		to_name  = request.POST.get ('first_name', None)
+		to_email = request.POST.get ('email', None)
+		if to_name != None and to_email != None:
+#			TODO:// Validate user inputs and keep an invite log with hash
+			hash_string = util.encrypt_sha256 (to_email)
+			inv = Invitation (cuser=request.user,hash_string=hash_string, 
+					to_name=to_name, to_email=to_email)
+			util.send_invitation_email (to_name,to_email, hash_string, request)
+			inv.save ()
+
+			context = {
+				'message': [
+					'Invitation sent to ' + to_name,
+					'Email is addressed to ' + to_email,
+					],
+				'first_name': request.user.first_name,
+				'action': 'Return to UCMem Home',
+				'actionurl': request.POST.get('next', reverse ('ucm:home')),
+				'hash_string': hash_string,
+			}
+			return render(request, 'uauth/message_box.html', {'context':context})
+
+	return render(request, template_name, {'context':context})
+
+@login_required
+def topic_subscribe (request, pk=0):
+	if request.method == 'GET':
+		print ("subscribe-subscribe-subscribe-subscribe:", pk)		
+		t=Topic.objects.filter (pk=pk).first()
+		if not t:
+			messages.info (request, "Selected topic not found for subscription")
+		else:
+			messages.info (request, "Topic [" + t.title + "] subscribed successfully. Enjoy learning")
+
+		util.subscribe_topic (request.user.id, pk, request)
+
+	return HttpResponseRedirect(reverse('ucm:home'))
+
+@login_required
+def invite(request):
+	if request.method == 'POST':
+		print (request.POST)
+		to_name  = request.POST.get ('first_name', None)
+		to_email = request.POST.get ('username', None)
+		if to_name != None and to_email != None:
+#			TODO:// Validate user inputs and keep an invite log with hash
+			hash_string = util.encrypt_sha256 (to_email)
+			inv = Invitation (cuser=request.user,hash_string=hash_string, 
+					to_name=to_name, to_email=to_email)
+			util.send_invitation_email (to_name,to_email, hash_string, request)
+			inv.save ()
+
+			context = {
+				'message': [
+					'Invitation sent to ' + to_name,
+					'Email is addressed to ' + to_email,
+					],
+				'first_name': request.user.first_name,
+				'action': 'Return to UCMem Home',
+				'actionurl': reverse('ucm:home'),
+				'hash_string': hash_string,
+			}
+			return render(request, 'uauth/message_box.html', {'context':context})
+
+	user_form = UserForm()
+	return render(request,'uauth/invite.html',{'user_form':user_form,})
 
 def get_progress (user):
  # 0. card_count = 10; NEXT_BOX = 0
@@ -216,7 +265,6 @@ def get_progress (user):
  # 5.1 % share of next BOX = round (card_count_NEXT_BOX/count (cards from all boxes starting from NEXT_BOX)*100)
  # 5.2 Repeat step 1
 
-#	unm = UserTopic.objects.filter (user=user)
 	unm = UserNotem.objects \
 		.filter (usertopic__in = UserTopic.objects.filter (user=user)) \
 		.values('usertopic_id', 'currdeck') \
@@ -224,11 +272,11 @@ def get_progress (user):
 		.order_by('usertopic_id', 'currdeck')
 
 	for x in unm:
-		print (x)
+#		print (x)
 		gtotal = sum (y ['total'] for y in unm if y ['usertopic_id'] == x ['usertopic_id'])
-		print ('------------>', gtotal)
+#		print ('------------>', gtotal)
 		x ['percentage'] = round ((x ['total']/gtotal)*100)
-		print (x)
+#		print (x)
 
 	return unm
 
@@ -278,12 +326,12 @@ def do_calc (ut):
 @login_required
 def more (request):
 	if request.method == 'GET':
-		return review (request, learn_more=True)
+		return topic_review (request, learn_more=True)
 #		return buildHome (request)		
 	else:
-		print ("------------------> POST", request.POST)
+		print (r"------------------> MORE::POST::TOPIC {}".format (request.POST.get ('ritem', 0)), request.POST)
 		request.method = 'GET'
-		return review (request, pk=request.POST.get ('ritem', 0), learn_more=True)		
+		return topic_review (request, pk=request.POST.get ('ritem', 0), learn_more=True)		
 # 	else:
 # 		raise Http404
 # #		raise Exception('Unsupported method')
@@ -330,3 +378,263 @@ class YourView(views.APIView):
 		yourdata= [{"likes": 10, "comments": 0}, {"likes": 4, "comments": 23}]
 		results = YourSerializer(yourdata, many=True).data
 		return Response(results)
+
+@login_required
+def member_topic (request, pk=0, template_name='ucm/member-topics.html'):
+	topics = Topic.objects.filter (cuser=request.user)
+	context = {
+		'ptitle': "My Topics",
+		'topics': topics,
+	}
+
+	return render(request, template_name, {'context':context})
+
+@login_required
+def member_dashboard (request, template_name='ucm/member-db-main.html'):
+	context = {'ptitle': "Home"}
+
+	if request.method == 'GET':
+		unmSummary = get_progress (request.user)
+		userTopic = UserTopic.objects.filter (user=request.user)
+		utvl = userTopic.values_list('topic_id',flat=True)
+		suggestedTopic = Topic.objects.exclude (id__in=utvl)
+
+		return render(request, "ucm/member-db-main.html", {
+				'context':context,
+				'userTopic':userTopic,
+				'unmSummary':unmSummary,
+				'suggestedTopic': suggestedTopic,			
+			}
+		)
+	else:
+		raise Http404
+
+@login_required
+@transaction.atomic
+def member_profile (request, pk=0, template_name='ucm/member-profile.html'):
+	if request.method == 'POST':
+		post = request.POST.copy() # to make it mutable
+		# post ['email'] = request.user.email
+		# post ['username']= request.user.username
+		# post ['password2'] = request.user.password
+		# post ['password1'] = request.user.password
+		userForm = UserForm(data=post, instance=request.user)
+		profileForm = ProfileForm(request.POST, request.FILES, instance=request.user.profile)
+	
+#		if userForm.is_valid() and profileForm.is_valid():
+#			userForm.save()
+		if profileForm.is_valid():
+			profileForm.save()
+			messages.success (request, 'Your profile updated successfully!')
+			return redirect('ucm:member_profile')
+		else:
+			# for e in userForm.errors:
+			# 	messages.error (request, e)
+			for e in profileForm.errors:
+				messages.error (request, e)				
+			messages.error(request, 'Please correct the error below.')
+	else:
+		userForm = UserForm (instance=request.user)
+		profileForm = ProfileForm (instance=request.user.profile)
+
+	context = {
+		'ptitle': "Member Profile",
+		'userForm': userForm,
+		'profileForm': profileForm,
+	}
+	return render (request, template_name, {'context':context})
+
+@login_required
+def member_network (request, template_name='ucm/coming-soon.html'):
+	context = {
+		"ptitle":'My Network'
+	}
+	return render(request, template_name, {'context':context})
+
+@login_required
+def member_messaging (request, template_name='ucm/coming-soon.html'):
+	context = {
+		"ptitle":'Messaging'
+	}
+	return render(request, template_name, {'context':context})
+
+@login_required
+def compose_topic (request, pk, template_name='ucm/compose-topic.html'):
+	context = {'ptitle': "Manage Topic"}
+	print ("Topic: ", pk)
+	topic = None
+	if (pk != 0):
+		topic = get_object_or_404(Topic, pk=pk)
+	else:
+		topic = Topic ()
+	if request.method == 'POST':
+		print ('POST User---------> ', request.user)		
+		print (request.POST)
+		imagefile = request.FILES.get('imagefile', None)
+
+		if imagefile is not None:
+			print (request.FILES['imagefile'])
+#		topic = get_object_or_404(Topic, pk=pk)			
+		form = TopicForm (request.POST, request.FILES, instance=topic)
+		context ['topicForm'] = form
+		if form.is_valid():
+			print ("111 -> IsValid passed")
+			instance = form.save (commit=False)
+			instance.cuser = request.user
+			instance.muser = request.user
+			instance.save ()
+			pk = instance.id
+
+			msg = "New topic {} ({}) saved succesfully".format (instance.title, instance.id)
+			print (msg)
+			messages.success (request, msg)
+		else:
+			print ("111 -> IsValid failed")
+			messages.error (request, form.errors)
+			print ("Form Error", form.errors)
+
+		return redirect('ucm:compose_topic', pk=pk)
+	elif request.method == 'GET':
+		topicForm = TopicForm (instance=topic)
+
+		context ['topicForm'] = topicForm
+	else:
+		raise Http404
+
+	return render(request, template_name, {'context':context})
+
+@login_required
+def compose_note (request, pk, npk=0, template_name='ucm/compose-note.html'):
+	context = {
+		'ptitle': "Manage Topic",
+		'topic_id': pk,
+	}
+
+	topic = Topic.objects.filter (pk=pk)
+	if not topic:
+		errormsg = "TOPIC [" + str (pk) + "] not found"
+		messages.error (request, errormsg)
+		raise ObjectDoesNotExist (errormsg)
+
+	notem_all = Notem.objects.filter(topic__id=pk)	# TODO:// Handle no object found
+	context ['notem']  = notem_all
+
+	if not notem_all:	# No notes, so create new instance
+		notem = Notem.objects.none()
+		noted = Noted.objects.none()
+	else:
+		# Decide the current NoteM to be processed
+		if npk == 0:
+			npk = notem_all.first().id
+
+		notem = Notem.objects.filter (topic__id=pk, pk=npk)		
+		if not notem:
+			errormsg = "TOPIC [" + str (pk) + "] NOTE [" +  str (npk) + "] not found"
+			messages.error (request, errormsg)
+			return redirect('ucm:note', pk=pk)
+
+		noted = Noted.objects.only ('ntype', 'ndata', 'norder').filter(notem__id = npk).order_by ('norder')
+
+	print ("PK Here ", pk, npk)
+	if request.method == 'POST':
+		# if (npk== -1): # POST without Note Primary Key
+		# 	raise Http404
+		print ('POST User---------> ', request.user)
+#		print (request.POST)
+		# imagefile = request.FILES.get('imagefile', None)
+		# if imagefile is not None:
+		# 	print (request.FILES['imagefile'])
+		# # else:
+    	# # 	return redirect('/nofile/' {'foo': bar})			
+		# form = TopicForm (request.POST, request.FILES)
+		# if form.is_valid():
+		# 	instance = form.save (commit=False)
+		# 	instance.cuser = request.user
+		# 	instance.muser = request.user
+		# 	instance.save ()
+		# else:
+		# 	messages.error (request, form.errors)
+		formsetNotem = NotemFormSet(request.POST, queryset=notem, prefix='notem')
+		formsetNoted = NotedFormSet(request.POST, instance=notem.first(), prefix='noted')			
+#		print ("FormSet=========>: ", formset)	
+#		print ("formsetNotem====>: ", formsetNotem)
+		print ('---------> 1.1')
+		notem_deleteFlag = False
+		notem_insertFlag = False
+		if formsetNotem.is_valid():
+			print ('---------> 1.2')			
+			instanceNotem = formsetNotem.save(commit=False)
+
+			for obj in formsetNotem.deleted_objects:
+				notem_deleteFlag = True
+				obj.delete()
+
+			for i in instanceNotem:
+				print ('---------> 1.3')
+				if not i.id:
+					notem_insertFlag = True
+					i.cuser = request.user
+					i.topic = topic.first()
+					i.save()
+					print ("New NoteM Created ==>", npk)
+					npk = i.id
+				else:
+					i.save()
+		else:
+			print ('---------> 1.4')
+			print ("formsetNotem.errors =>", formsetNotem.errors)
+
+			messages.error (request, "Note Master Errors:")
+			for e in formsetNotem.errors:
+				messages.error (request, e)
+			
+			return redirect('ucm:noted', pk=pk, npk=(0 if notem_deleteFlag else formsetNoted.instance.id))
+
+		print ('---------> 1.4.1')
+		if not notem_deleteFlag:
+			if formsetNoted.is_valid():
+				print ('---------> 1.5')
+				formsetNotem.save (commit=True)
+	#			print ("formset:", formset.instance.id)
+				instances = formsetNoted.save(commit=False)
+
+				for obj in formsetNoted.deleted_objects:
+					obj.delete()
+
+				for instance in instances:
+					print ('---------> 1.6')
+					if not instance.id:
+						instance.cuser = request.user
+						print ("New Noted Instance: >>", instance)
+						
+					print ("Old Noted Instance: >>", instance.notem,
+						"<>", instance.ntype, "<>", instance.ndata, "<>", instance.audio,
+						"<>", instance.norder, "<>", instance.cuser, "<>", instance.cdate,
+						"<>", instance.id)						
+					instance.save()
+				messages.success (request, "Changes saved successfully")
+				return redirect('ucm:compose_noted', pk=pk, npk=(0 if notem_deleteFlag else npk))
+			else:
+				print ('---------> 1.7')
+				print ("formsetNotem.errors =>", formsetNoted.errors)
+				messages.error (request, "Note Details Errors:")
+				for e in formsetNoted.errors:
+					messages.error (request, e)
+				return redirect('ucm:compose_noted', pk=pk, npk=(0 if notem_deleteFlag else npk))
+		else:
+			messages.success (request, "Changes saved successfully")
+			return redirect('ucm:compose_noted', pk=pk, npk=(0 if notem_deleteFlag else formsetNoted.instance.id))
+	elif request.method == 'GET':
+		print ('---------> 1.8')
+		formsetNotem = NotemFormSet (queryset=notem, prefix='notem')
+		formsetNoted = NotedFormSet (instance=notem.first() if notem_all else None, 
+			queryset=noted if notem_all else None, prefix='noted')
+		# formsetNotem = NotemFormSet (queryset=notem, prefix='notem')
+		# formsetNoted = NotedFormSet (prefix='noted')
+
+		context ['formsetNotem'] = formsetNotem
+		context ['formsetNoted'] = formsetNoted		
+	else:
+		raise Http404
+
+	return render(request, template_name, {'context':context})

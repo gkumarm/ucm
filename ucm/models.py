@@ -1,5 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+import uuid
+from PIL import Image
+from io import BytesIO
+from django.core.files import File
+from django.core.files.base import ContentFile
 
 from . import constants
 
@@ -8,6 +14,7 @@ NOTE_TYPES = (
 	('text',  'Text'),
 	('image', 'Image'),
 	('url',   'URL'),
+	('html',  'HTML'),
 	('example','Example'),
 )
 
@@ -16,16 +23,70 @@ SR_METHODS = (
 	(constants.LBOXR, 'Leitnes Box - Restart'),
 )
 
-class Topic (models.Model):
+IMG_SIZE_H_TOPIC = 333
+IMG_SIZE_W_TOPIC = 711
+
+class ResizeImageMixin:
+	def resize(self, imageField: models.ImageField, t_height, t_width):
+
+		height = imageField.height 
+		width = imageField.width
+		print (r"Max H {}, Max W {}, Image H {}, Image W {}".format (t_height, t_width, height, width))
+
+		if width != t_width or height != t_height:
+			print ("===============> Resizing Image")
+			imageField.open()
+			im = Image.open(imageField)  # Catch original
+			im.load()
+			source_image = im.convert('RGB')
+			source_image = source_image.resize((t_width, t_height), Image.ANTIALIAS)  # Resize to size
+			output = BytesIO()
+			source_image.save(output, format='JPEG') # Save resize image to bytes
+			output.seek(0)
+
+			content_file = ContentFile(output.read())  # Read output and create ContentFile in memory
+			file = File(content_file)
+
+			random_name = f'{uuid.uuid4()}.jpg'
+			imageField.save(random_name, file, save=False)
+
+def has_changed(instance, field):
+	if not instance.pk:
+		return True
+	
+	old_value = instance.__class__._default_manager.\
+		filter(pk=instance.pk).values(field).get()[field]
+	return not getattr(instance, field) == old_value
+
+def validate_image(imagefile):
+	max_height = 333
+	max_width = 711
+	
+	height = imagefile.height 
+	width = imagefile.width
+
+	print (r"Max H {}, Max W {}, Image H {}, Image W {}".format (max_height, max_width, height, width))
+
+	if width > max_width or height > max_height:
+		raise ValidationError("Height or Width is larger than what is allowed")
+
+class Topic (models.Model, ResizeImageMixin):
 	title = models.CharField (max_length=120)
 	description = models.CharField (max_length=600)
 	imagename = models.CharField (max_length=60)
+	imagefile = models.ImageField("Topic Image", upload_to='images', default='images/topic_img_default.jpg') #, validators=[validate_image])	
 	cuser = models.ForeignKey(User,on_delete=models.CASCADE)
 	cdate = models.DateTimeField (auto_now_add=True)
 	mdate = models.DateTimeField (auto_now=True)
 
 	def __str__(self):
 		return self.title
+
+	def save(self, *args, **kwargs):
+		if has_changed(self, 'imagefile'):
+			self.resize(self.imagefile, IMG_SIZE_H_TOPIC, IMG_SIZE_W_TOPIC)
+
+		super().save(*args, **kwargs)
 
 	class Meta:
 		verbose_name = "Topic"
@@ -49,7 +110,7 @@ class Notem (models.Model):
 class Noted (models.Model):
 	notem = models.ForeignKey(Notem,on_delete=models.CASCADE)
 	ntype = models.CharField (max_length=10, choices=NOTE_TYPES)
-	ndata = models.CharField (max_length=612)
+	ndata = models.CharField (max_length=1024)
 	audio = models.CharField (max_length=60, null=True, blank=True)
 	norder= models.DecimalField (max_digits=2, decimal_places=0, null=True, blank=True)
 
@@ -125,4 +186,14 @@ class ReviewLog (models.Model):
 
 	def __str__(self):
 		return self.notes + ' (' + self.cuser + ')'
-		
+
+class Invitation (models.Model):
+	cuser        = models.ForeignKey(User,on_delete=models.CASCADE)
+	cdate        = models.DateTimeField (auto_now_add=True)
+	mdate        = models.DateTimeField (auto_now=True)
+	hash_string  = models.CharField (max_length=256,  unique=True)
+	inv_type     = models.CharField (blank=False, max_length=10, default='None')
+	inv_type_id  = models.IntegerField (blank=False, default=0)
+	to_name      = models.CharField (max_length=60)
+	to_email     = models.CharField (max_length=80)
+	acceptedflag = models.BooleanField (default=False)

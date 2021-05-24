@@ -28,11 +28,19 @@ def subscribe_topic (user_id, topic_id, request):
 		srmethod='LBOXP', maxdeck=5, dclimit=5)
 	ut.save ()
 
+	# SQLLite
+	# sqlUserNote = """
+	# 	insert into ucm_usernotem (
+	# 		currdeck, notem_id, usertopic_id, cdate, mdate) 
+	# 		select 0, id,%s, datetime ('now'), datetime ('now') from ucm_notem where topic_id=%s
+	# """
+
+	# Postgres
 	sqlUserNote = """
 		insert into ucm_usernotem (
 			currdeck, notem_id, usertopic_id, cdate, mdate) 
-			select 0, id,%s, datetime ('now'), datetime ('now') from ucm_notem where topic_id=%s
-	"""
+			select 0, id,%s, now(), now() from ucm_notem where topic_id=%s
+	"""	
 	cursor = connection.cursor()
 	cursor.execute(sqlUserNote, [ut.id, topic_id])
 #	transaction.commit_unless_managed()
@@ -63,8 +71,8 @@ def send_invitation_email (to_name, to_email, hash_string, request):
 	html_template = 'uauth/invite_mail_template.html'
 	html_message = render_to_string(html_template, { 'context': context, })
 
-	print ('HTML:-------------', html_message)
-	print ('Context <-------->', context)
+	# print ('HTML:-------------', html_message)
+	# print ('Context <-------->', context)
 	
 	print ("Response of email send --> ", 
 		send_mail (subject, text_message, 

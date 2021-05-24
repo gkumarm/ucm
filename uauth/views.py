@@ -6,60 +6,36 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from django.contrib.auth.forms import UserCreationForm
+from django.core.cache import cache
+from django.utils.http import is_safe_url
 
+from base.settings import LOGIN_REDIRECT_URL
 from .forms import UserForm
-from .models import Profile, Invitation
+from .models import Profile
 from . import util as util
 
 @login_required
-def ulogout(request):
+def usignout(request):
 	logout(request)
 	messages.success(request, 'You are logged out!')	
-	return HttpResponseRedirect(reverse('uauth:login'))
+	return HttpResponseRedirect(reverse('uauth:signin'))
 
-@login_required
-def uinvite(request):
-	if request.method == 'POST':
-		print (request.POST)
-		to_name  = request.POST.get ('first_name', None)
-		to_email = request.POST.get ('username', None)
-		if to_name != None and to_email != None:
-#			TODO:// Validate user inputs and keep an invite log with hash
-			hash_string = util.encrypt_sha256 (to_email)
-			inv = Invitation (cuser=request.user,hash_string=hash_string, 
-					to_name=to_name, to_email=to_email)
-			util.send_invitation_email (to_name,to_email, hash_string, request)
-			inv.save ()
-
-			context = {
-				'message': [
-					'Invitation sent to ' + to_name,
-					'Email is addressed to ' + to_email,
-					],
-				'first_name': request.user.first_name,
-				'action': 'Return to UCMem Home',
-				'actionurl': reverse('ucm:home'),
-				'hash_string': hash_string,
-			}
-			return render(request, 'uauth/message_box.html', {'context':context})
-
-	user_form = UserForm()
-	return render(request,'uauth/invite.html',{'user_form':user_form,})
-
-def uregister(request):
+def usignup(request):
+	context = {'ptitle': "Sign Up"}
 	registered = False
 	if request.method == 'POST':
 		print (request.POST)
 		post = request.POST.copy() # to make it mutable
-#		post ['password2'] = post ['password1']
 		post ['email'] = post ['username']
-		user_form = UserForm(data=post)
-		if user_form.is_valid():
+		post ['password2'] = post ['password1']
+		userForm = UserForm(data=post)
+		if userForm.is_valid():
 			hash_string = util.encrypt_sha256 (post ['username'] )
-			user = user_form.save()
+			user = userForm.save()
 			user.profile.notificationflag = True if post.get ('notificationflag', 'off') == 'on' else False
-			user.profile.hash_string = hash_string
+			user.profile.validatehash = hash_string
 			user.is_active = False
+			print ("Hash String is ====>", hash_string)
 #			user.set_password(user.password)
 			user.save()
 			registered = True
@@ -68,6 +44,7 @@ def uregister(request):
 				hash_string, request)
 
 			context = {
+				'ptitle': "Message",
 				'message': [
 					'Your account is created.' ,
 					'A verification email is sent to your email ' + post ['username'] ,
@@ -79,52 +56,16 @@ def uregister(request):
 			}
 			return render(request, 'uauth/message_box.html', {'context':context})
 		else:
-			messages.error (request, user_form.errors)
-			print(user_form.errors)
-	elif request.method == 'GET':
-		hash_string = request.GET.get ('upn', None)
-		if hash_string:
-			inv = Invitation.objects.filter (hash_string=hash_string).first()
-			if inv:
-				if inv.acceptedflag == True:
-					context = {
-						'message': [
-							'This join invitation is already completed',
-							], 
-						'first_name': inv.to_name,
-						'action': 'Login to UCMem',
-						'actionurl': reverse('uauth:login'),
-					}
-					return render(request, 'uauth/message_box.html', {'context':context})
-				else:
-					print ("========== Creating user_form =========")
-					user_form = UserForm(initial={
-						'username': inv.to_email, 
-						'first_name': inv.to_name})
-			else:
-				context = {
-					'message': [
-						'We received an invalid invitation request.',
-						'Please try again the register option.',
-						],
-					'action': 'Return to UCMem Home',
-					'actionurl': reverse('ucm:home'),
-				}
-				return render(request, 'uauth/message_box.html', {'context':context})
-		else:
-			context = {
-				'message': [
-					'We received an incomplete registration request',
-					'Please try again the register option.',
-					], 
-				'action': 'Return to UCMem Home',
-				'actionurl': reverse('ucm:home'),
-			}
-			return render(request, 'uauth/message_box.html', {'context':context})
-	else:
-		user_form = UserForm()
+			context ['userForm'] = userForm			
+			messages.error (request, userForm.errors)
+			print(userForm.errors)
 
-	return render(request,'uauth/registration.html',{'user_form':user_form,})
+	elif request.method == 'GET':
+		return render(request, 'uauth/signup.html', {'context':context})
+	else:
+		userForm = UserForm()
+
+	return render(request,'uauth/signup.html',{'context':context})
 
 def uverify (request):
 	if request.method == 'GET':
@@ -134,21 +75,24 @@ def uverify (request):
 			if profile:
 				if profile.validatedflag == True:
 					context = {
+						'ptitle': "Message",
 						'message': [
 							'Your account is already verified.',
 							], 
 						'first_name': profile.user.first_name,
-						'action': 'Login to UCMem',
-						'actionurl': reverse('uauth:login'),
+						'action': 'Sign In to UCMem',
+						'actionurl': reverse('uauth:signin'),
 					}
 				else:
 					context = {
+						'ptitle': "Message",
 						'message': [
 							'Your account verified.',
 							'Enjoy the UCMem unique experience',
 							],
-						'action': 'Login to UCMem',
-						'actionurl': reverse('uauth:login'),
+						'first_name': profile.user.first_name,
+						'action': 'Sign In to UCMem',
+						'actionurl': reverse('uauth:signin'),
 					}
 					profile.validatedflag = True
 					profile.save()
@@ -156,36 +100,42 @@ def uverify (request):
 					profile.user.save ()
 			else:
 				context = {
+					'ptitle': "Message",
 					'message': [
 						'We received an invalid account verification request.',
-						'Please try again the register option.',
+						'Please try again the Sign Up option.',
 						],
-					'action': 'Register',
-					'actionurl': reverse('uauth:register'),
+					'action': 'Sign Up',
+					'actionurl': reverse('uauth:signup'),
 				}
 		else:
 			context = {
+				'ptitle': "Message",
 				'message': [
 					'We received an incomplete verification request',
-					'Please try again the register option.',
+					'Please try again the Sign Up option.',
 					], 
-				'action': 'Register',
-				'actionurl': reverse('uauth:register'),
+				'action': 'Sign Up',
+				'actionurl': reverse('uauth:signup'),
 			}
 	else:
 		context = {
+			'ptitle': "Message",
 			'message': [
 				'We received an unsupported verification action',
-				'Please try again the register option.',
+				'Please try again the Sign Up option.',
 				], 
-			'action': 'Register',
-			'actionurl': reverse('uauth:register'),
+			'action': 'Sign Up',
+			'actionurl': reverse('uauth:signup'),
 		}
 
 	return render(request, 'uauth/message_box.html', {'context':context})
 
-def ulogin(request):
-	if request.method == 'POST':
+def usignin(request):
+	context = {'ptitle': "Sign In"}
+	if request.method == "GET":
+		cache.set ('next', request.GET.get ('next', None))
+	elif request.method == 'POST':
 		username = request.POST.get('username')
 		password = request.POST.get('password')
 		print("Authenticating user: {} and password: {}".format(username,password))		
@@ -198,16 +148,28 @@ def ulogin(request):
 					messages.success (request, 'Welcome ' + user.first_name + '!!!')
 				login(request,user)
 
-				return HttpResponseRedirect(reverse('ucm:home'))
+				next_url = cache.get('next')
+				if next_url:
+					cache.delete ('next')
+					print ("next url from cache ==>", next_url)
+					if not is_safe_url (url=next_url,
+						allowed_hosts = {request.get_host()},
+						require_https = request.is_secure()):
+						next_url = LOGIN_REDIRECT_URL
+						print ("is_safe_url failed")
+				else:
+					next_url = LOGIN_REDIRECT_URL
+
+				return HttpResponseRedirect(next_url)
 			else:
 				return HttpResponse("Your account was inactive.")
 		else:
-			print("Someone tried to login and failed.")
+			print("Someone tried to Sign In and failed.")
 			print("They used username: [{}] and password: [{}]".format(username,password))
-			messages.error(request, 'Invalid login details given!')
-			return render(request, 'uauth/login.html', {'errmsg':'Invalid login details given'})
-	else:
-		return render(request, 'uauth/login.html', {})
+			messages.error(request, 'Invalid Sign In details given!')
+			return render(request, 'uauth/signin.html', {'errmsg':'Invalid Sign In details given'})
+
+	return render(request, 'uauth/signin.html', {'context':context})
 
 @login_required
 def upassword(request):
@@ -216,9 +178,9 @@ def upassword(request):
 		if form.is_valid():
 			user = form.save()
 			update_session_auth_hash(request, user)  # Important!
-			messages.success(request, 'Your password updated successfully! Sign-in again with new credentials.')
+			messages.success(request, 'Your password updated successfully! Sign In again with new credentials.')
 			logout(request)
-			return HttpResponseRedirect(reverse('uauth:login'))
+			return HttpResponseRedirect(reverse('uauth:signin'))
 		else:
 			messages.error(request, 'Please correct the error below.')
 	else:

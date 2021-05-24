@@ -1,0 +1,83 @@
+{% extends "ucm/member.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block mainContentBlock %}
+<div class="col-lg-9 col-md-8 col-12"> <!-- Container for Main content-->
+    <!-- Card -->
+    <div class="card mb-4">
+        <!-- Card header -->
+        <div class="card-header">
+            <h3 class="mb-0">Profile Details</h3>
+        </div>
+        <!-- Card body -->
+        <div class="card-body">
+            <form name="form1" method="post" enctype="multipart/form-data">
+                {% csrf_token %}             
+                <div class="d-lg-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center mb-4 mb-lg-0">
+                        <img src="{{ context.profileForm.instance.imagefile.url|default:'/media/ucm/images/prof_pics/default.jpg' }}"
+                            id="coverimage" class="avatar-xl rounded-circle" alt="" />
+                        <div class="ml-3">
+                            <h4 class="mb-0">Your avatar</h4>
+                            <p class="mb-0">
+                                PNG or JPG no bigger than 256px wide and 256px tall.
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        <input type="button" class="btn btn-outline-danger btn-sm"
+                            value="Delete" onclick="resetimage(this,'#coverimage');" />
+                        <input type="file" id="imagefile" name="imagefile" style="display: none;" 
+                            accept="image/*" onchange="readURL(this, '#coverimage');"/>
+                        <input type="button" class="btn btn-outline-white btn-sm"
+                            value="Update" onclick="document.getElementById('imagefile').click();" />                    
+                    </div>
+                </div>
+                <hr class="my-5" />
+                <div class="form-row">
+                    <!-- First name -->
+                    <div class="form-group col-12 col-md-6">
+                        {{ context.userForm.first_name|as_crispy_field }}
+                    </div>
+                    <!-- Last name -->
+                    <div class="form-group col-12 col-md-6">
+                        {{ context.userForm.last_name|as_crispy_field }}
+                    </div>
+                    <!-- Phone -->
+                    <div class="form-group col-12 col-md-6">
+                        {{ context.profileForm.phone_number|as_crispy_field }}
+                    </div>
+                    <!-- Birthday -->
+                    <div class="form-group col-12 col-md-6">
+                        {{ context.profileForm.birth_date|as_crispy_field }}
+                    </div>
+                    <!-- Address -->
+                    <div class="form-group col-12 col-md-6">
+                        {{ context.profileForm.address_line_1|as_crispy_field }}
+                    </div>
+                    <!-- Address -->
+                    <div class="form-group col-12 col-md-6">
+                        {{ context.profileForm.address_line_2|as_crispy_field }}
+                    </div>
+                    <!-- Country -->
+                    <div class="form-group col-12 col-md-6">
+                        <label class="form-label">Country</label>
+                        <select class="selectpicker" data-width="100%">
+                            <option value="">Select Country</option>
+                            <option value="IN">India</option>
+                            <option value="UK">UK</option>
+                            <option value="US">USA</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <!-- Button -->
+                        <button class="btn btn-primary" type="submit">
+                            Update Profile
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div> <!-- End of Main Content container-->
+{% endblock mainContentBlock %}

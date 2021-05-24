@@ -1,0 +1,40 @@
+{% load static %}
+<!-- User Info -->
+<div class="row align-items-center">
+    <div class="col-xl-12 col-lg-12 col-md-12 col-12">
+        <!-- Bg -->
+        <div class="pt-16 rounded-top" style="
+            background: url({% static 'ucm/assets/images/background/profile-bg.jpg'%}) no-repeat; background-size: cover;">
+        </div>
+        <div class="d-flex align-items-end justify-content-between bg-white px-4 pt-2 pb-4 rounded-none rounded-bottom shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="mr-2 position-relative d-flex justify-content-end align-items-end mt-n5">
+                    <img src="{{ request.user.profile.imagefile.url|default:'/media/ucm/images/prof_pics/default.jpg'}}"
+                        class="avatar-xl rounded-circle border-width-4 border-white position-relative"
+                        alt="" />
+                    <a href="#!" class="position-absolute top-0 right-0" 
+                        data-toggle="tooltip" data-placement="top" title=""
+                        data-original-title="Verified">
+                        <img src="{% static 'ucm/assets/images/svg/checked-mark.svg'%}" alt="" height="30" width="30" />
+                    </a>
+                </div>
+
+                <div class="lh-1">
+                    <h2 class="mb-0">{{request.user.first_name}}
+                        <a href="#!" class="text-decoration-none" data-toggle="tooltip" data-placement="top" title="" data-original-title="Beginner">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="8" width="2" height="6" rx="1" fill="#754FFE"></rect>
+                                <rect x="7" y="5" width="2" height="9" rx="1" fill="#DBD8E9"></rect>
+                                <rect x="11" y="2" width="2" height="12" rx="1" fill="#DBD8E9"></rect>
+                            </svg>
+                            </a>                                
+                    </h2>
+                    <p class="mb-0 d-block">{{request.user.username}}</p>
+                </div>
+            </div>
+            <div>
+                <a href="{% url 'ucm:member_dashboard' %}" class="btn btn-outline-primary btn-sm d-none d-md-block">Go to Dashboard</a>                        
+            </div>  
+        </div>
+    </div>
+</div>

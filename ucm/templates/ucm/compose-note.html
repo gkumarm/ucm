@@ -1,0 +1,233 @@
+{% extends "ucm/basen.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block content %}
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+<script id="MathJax-script" type="text/javascript" async src="/static/mathjax/tex-chtml.js"></script>
+<!-- Page header-->
+<form name="form1" method="post" enctype="multipart/form-data">    
+{% csrf_token %}
+<div class="py-4 py-lg-6 bg-primary">
+    <div class="container">
+        <div class="row">
+            <div class="offset-lg-0 col-lg-12 col-md-12 col-12">
+                <div class="d-lg-flex align-items-center justify-content-between">
+                    <!-- Content -->
+                    <div class="mb-4 mb-lg-0">
+                        <h1 class="text-white mb-1">Manage Topic Notes</h1>
+                        <p class="mb-0 text-white lead">Topic: {{context.formsetNoted.instance.topic.title}}</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'ucm:compose_topic' pk=context.topic_id %}" class="btn btn-white ">Back to Topic</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="pb-12"> <!-- Page Content -->
+    <div class="container"> <!-- Page Container -->
+        <div class="row mt-0 mt-md-4">
+            <div class="col-lg-4 col-md-4 col-12">
+                <!-- Side navabar -->
+                <nav class="navbar navbar-expand-md navbar-light shadow-sm mb-4 mb-lg-0 sidenav">
+                    <!-- Menu -->
+                    <a class="d-xl-none d-lg-none d-md-none text-inherit font-weight-bold" href="#!">Menu</a>
+                    <!-- Button -->
+                    <button class="navbar-toggler d-md-none icon-shape icon-sm rounded bg-primary text-light" type="button"
+                        data-toggle="collapse" data-target="#sidenav" aria-controls="sidenav" aria-expanded="false"
+                        aria-label="Toggle navigation">
+                        <span class="fe fe-menu"></span>
+                    </button>
+                    <!-- Navbar Collapse -->
+                    <div class="collapse navbar-collapse" id="sidenav">
+                        <div class="navbar-nav flex-column divScroll">
+                            <!-- Navbar header -->
+                            <span class="navbar-header">Topic Notes (Count: {{context.notem|length }})</span>
+
+                            <ul class="list-unstyled ml-n2 mb-4">
+                                {% for notem in context.notem %}
+                                    {% if notem.id == context.formsetNoted.instance.id %}
+                                        <li class="nav-item active">
+                                    {% else %}
+                                        <li class="nav-item">
+                                    {% endif %}
+                                    <a class="nav-link" 
+                                        href="{% url 'ucm:compose_noted' pk=context.formsetNoted.instance.topic.id npk=notem.id %}">{{ notem.name }}
+                                    </a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+            </div> <!-- end of left side notes menu -->
+            
+            <div class="col-lg-8 col-md-8 col-12">
+                <!-- -->
+                <div class="card">
+                    <ul class="nav nav-line-bottom" id="pills-tab-javascript-behavior" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="pills-detail-tab" data-toggle="pill" href="#pills-detail" role="tab" 
+                                aria-controls="pills-detail" aria-selected="true">Detail</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="pills-note-tab" data-toggle="pill" href="#pills-note" role="tab" 
+                                aria-controls="pills-note" aria-selected="false">Note</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="pills-preview-tab" data-toggle="pill" href="#pills-preview" role="tab" 
+                                aria-controls="pills-preview" aria-selected="false">Preview</a>
+                        </li>
+                    </ul>
+                    <!-- Tab content -->
+                    <div class="tab-content p-4" id="pills-tabContent-javascript-behavior">
+                        <div class="tab-pane tab-detail fade active show" id="pills-detail" role="tabpanel" aria-labelledby="pills-detail-tab">
+                            <div>
+                                <h3 class="mb-0">Note details: {{ context.formsetNoted.instance.name }}</h3>
+                            </div>
+                            {{ context.formsetNoted.management_form }}
+                            {% for form in context.formsetNoted %}
+                                {% if not form.instance.pk %}
+                                    <h3 class="mb-0">Add new Note Details here: </h3>
+                                {% endif %}                            
+                                <div class="row">
+                                    {% for hidden in form.hidden_fields %}
+                                        {{ hidden }}
+                                    {% endfor %}
+
+                                    <div class="col-md-3 col-sm-12 mb-0 form-group">
+                                        {{ form.norder |as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-5 col-sm-12 mb-0 form-group">
+                                        {{ form.ntype |as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-4 form-inline col-sm-12 mb-0 form-group">
+                                        {{ form.DELETE |as_crispy_field }}
+                                    </div>                                    
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 col-sm-12 mb-0 form-group">
+                                        {{ form.ndata |as_crispy_field }}
+                                    </div>
+                                </div>
+                                <div class="divider mb-1 py-1 bg-dark"></div>                                
+                            {% endfor %}
+                            <div><br>
+                                <button type="submit" id="submitButton" class="btn btn-success">Save</button>                
+                            </div>                                
+                        </div>
+                        <div class="tab-pane tab-note fade" id="pills-note" role="tabpanel" aria-labelledby="pills-note-tab">
+                            <div>
+                                <h3 class="mb-0">Manage Note details</h3>
+                            </div>
+                            {{ context.formsetNotem.management_form }}
+                            {% for form in context.formsetNotem %}
+                                {% if not form.instance.pk %}
+                                    <h3 class="mb-0">Add new Note here: </h3>
+                                {% endif %}                            
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                                <div class="row">
+                                    <div class="col-md-12 col-sm-12 mb-0 form-group">
+                                        {{ form.name |as_crispy_field }}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 col-sm-12 mb-0 form-group">
+                                        {{ form.DELETE |as_crispy_field }}
+                                    </div>
+                                </div>
+                                <div class="divider mb-1 py-1 bg-dark"></div>                                
+                            {% endfor %}
+                            <div><br>
+                                <button type="submit" id="submitButton" class="btn btn-success">Save</button>                
+                            </div>                              
+                        </div>
+                        <div class="tab-pane tab-preview fade" id="pills-preview" role="tabpanel" aria-labelledby="pills-preview-tab">
+                            <div>
+                                {% for form in context.formsetNoted %}
+                                    {% if form.instance.ntype == "title" %}
+                                        <h1 class="display-6">
+                                            {{ form.instance.ndata }}
+                                        </h1>
+                                    {% elif form.instance.ntype == "text" %}
+                                        <p class="text-break fs-1">
+                                            {{ form.instance.ndata }}
+                                        </p>
+                                    {% elif form.instance.ntype == "html" %}
+                                        <p class="text-break fs-1">
+                                            {{ form.instance.ndata| safe }}
+                                        </p>
+                                    {% elif form.instance.ntype == "example" %}
+                                        <p class="text-break fs-1">
+                                            {{ form.instance.ndata }}
+                                        </p>
+                                    {% elif form.instance.ntype == "image" %}
+                                        <img src="{% static form.instance.ndata %}" width="300" height="300" 
+                                            class="d-inline-block align-top rounded mx-auto" alt="UCMem" loading="lazy"/>
+                                            <br><br>
+                                    {% elif form.instance.ntype == "url" %}
+                                        <a href="{{ form.instance.ndata }}" target="_new">{{form.instance.ndata}}</a><br>
+                                    {% else %}
+                                    {% endif %}
+                                    {% if forloop.first %}
+                                        {% if form.instance.audio %}
+                                            <input class="btn btn-success" 
+                                                onclick="audioPlay('{{request.scheme}}://{{request.META.HTTP_HOST}}{% static val.audio %}');" 
+                                                type='button' value='🔊 Play' />
+                                        {% endif %}
+                                        <button type="button" class="btn btn-primary" name="flip_card" 
+                                            onclick="window.divCollapse(this,'#myCollapsible');">Show Contents
+                                        </button>
+                                        <hr class="my-4">
+                                        <div id="myCollapsible" class="collapse">
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- End of Page Container -->
+</div> <!-- End of Page Content -->
+</form>
+<script>
+    function divCollapse(btn, nname) {
+      if ($(btn).text () == "Hide Contents") {
+        $(btn).text("Show Contents");
+      } else {
+        $(btn).text("Hide Contents");
+      }
+      $(nname).collapse('toggle')
+    }
+  </script>
+  
+  <script>
+    var audio = null;
+  
+    function audioInit (url) {
+      audio = new Audio(url);  
+    }
+  
+    function audioPlay (url) {
+      audioInit (url);
+      audio.play();
+    }
+  
+    function AudioPause () {
+        audio.pause();
+    }
+  
+    function AudioCancel () {
+        audio.pause();
+        audio.currentTime = 0;
+        audio = null;
+    }
+  
+  </script>
+{% endblock %}
