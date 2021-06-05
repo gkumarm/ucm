@@ -107,8 +107,12 @@ class Notem (models.Model):
 		verbose_name = "Topic Note"
 		verbose_name_plural = "Topic Notes"
 
+	@property
+	def sorted_noted_set(self):
+		return self.noted_set.order_by('norder')
+
 class Noted (models.Model):
-	notem = models.ForeignKey(Notem,on_delete=models.CASCADE)
+	notem = models.ForeignKey(Notem, related_name='noted_set', on_delete=models.CASCADE)
 	ntype = models.CharField (max_length=10, choices=NOTE_TYPES)
 	ndata = models.CharField (max_length=1024)
 	audio = models.CharField (max_length=60, null=True, blank=True)
@@ -152,7 +156,7 @@ class UserTopic (models.Model):
 		verbose_name_plural = "User Topics"
 
 class UserNotem (models.Model):
-	usertopic = models.ForeignKey(UserTopic,on_delete=models.CASCADE)
+	usertopic = models.ForeignKey('UserTopic', on_delete=models.CASCADE)
 	notem     = models.ForeignKey(Notem,on_delete=models.CASCADE)
 	currdeck  = models.PositiveSmallIntegerField (null=False, blank=True, default=0)
 	cdate     = models.DateTimeField (auto_now_add=True)
@@ -161,9 +165,13 @@ class UserNotem (models.Model):
 	def __str__(self):
 		return str (self.usertopic) + ':' + str (self.notem) + ':' + str (self.currdeck)
 
+	@property
+	def sorted_reviewlog_set (self):
+		return self.reviewlog_set.order_by('-cdate')		
+
 class UserLearningDeck (models.Model):
 	cuser     = models.ForeignKey(User,on_delete=models.CASCADE)
-	usernotem = models.ForeignKey(UserNotem,on_delete=models.CASCADE)
+	usernotem = models.ForeignKey(UserNotem, related_name='uld_set', on_delete=models.CASCADE)
 	cdate     = models.DateTimeField (auto_now_add=True)
 	def __str__(self):
 		return str (self.usernotem) + ':->' + str (self.cdate)
@@ -179,7 +187,7 @@ class UserNotemLog (models.Model):
 		return str (self.usernotem) + ':' + str (self.id)
 
 class ReviewLog (models.Model):
-	usernotem = models.ForeignKey(UserNotem,on_delete=models.CASCADE)
+	usernotem = models.ForeignKey(UserNotem, related_name='reviewlog_set', on_delete=models.CASCADE)
 	notes     = models.CharField (max_length=300, help_text='User log inforation ...', blank=False)
 	cuser     = models.ForeignKey(User,on_delete=models.CASCADE)
 	cdate     = models.DateTimeField (auto_now_add=True)

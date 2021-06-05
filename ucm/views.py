@@ -15,6 +15,7 @@ from django.views.generic import (
     CreateView, DetailView, FormView, ListView, TemplateView
 )
 from django.views.generic.detail import SingleObjectMixin
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from .decorators import query_debugger
 from django.contrib.auth.models import User
@@ -30,6 +31,9 @@ from .serializers import YourSerializer
 from django.forms import inlineformset_factory
 from django.core.exceptions import ValidationError
 
+from django.views.decorators.http import require_GET, require_POST
+from django.core.paginator import Paginator
+
 # l = logging.getLogger('django.db.backends')  
 # l.setLevel(logging.DEBUG)
 # l.addHandler(logging.StreamHandler())   
@@ -37,7 +41,7 @@ from django.core.exceptions import ValidationError
 # Create your views here.
 def home(request):
 	if request.user.is_authenticated:
-		return member_dashboard (request)
+		return feed (request)
 	else:
 		context = {'ptitle': "Home"}
 		return render(request, "ucm/index-non-signed-in.html", {'context': context})
@@ -47,67 +51,7 @@ def home(request):
 def topic_review (request, pk=0, learn_more=False, template_name='ucm/topic_review.html'):
 	context = {'ptitle': "Review"}	
 	filters = Q()
-	if request.method == 'POST':
-		reason = CsrfViewMiddleware().process_view(request, None, (), {})
-		if reason:
-			# CSRF failed
-			messages.error (request, "CSRF check failed")
-			raise PermissionException() # do what you need to do here
-
-		if request.POST.get('post') == 'Post':  # Block for post notes on task
-			print ("topic_review::POST:post================================>>")
-			formReviewLog  = ReviewLogForm (data=request.POST)
-			if formReviewLog.is_valid():
-				unm=formReviewLog.cleaned_data.get ('usernotem')
-				print ('Adding Notes--------------->', request.user, '->', unm.id)
-				formReviewLog.save ()
-				messages.success (request, 'New note added')
-				return HttpResponseRedirect(reverse('ucm:topic_review',  args=(unm.usertopic.id,)))
-			else:
-				print ("Post::post::Form Validation failed")
-				print (formReviewLog.errors)
-
-		print (request.POST)
-		nextdeck = 0
-		ritem = request.POST.get ('ritem', " Empty")
-		usernoteid = request.POST.get ('usernoteid', 0)
-		if 'r_0' in request.POST:	# Easy
-			ueval = 0
-		elif 'r_1' in request.POST: # Difficult
-			ueval = 1
-		elif 'r_2' in request.POST: # Very Difficult
-			ueval = 2
-
-		# Update deck details in UserNotem and create a log entry in UserNotemLog
-		uld = UserLearningDeck.objects.filter (id = usernoteid).first()
-		if not uld:
-			errormsg = "Integrity error.  Invalid note details received for learning deck card: " + str (usernoteid)
-			messages.error (request, errormsg)
-			raise ObjectDoesNotExist(errormsg)
-
-		nextdeck = calculateNextDeck (request, uld, ueval)
-		if nextdeck < 0:
-			return render(request, template_name, {})
-
-		unm = UserNotem.objects.filter (id = uld.usernotem.id).first()
-		print ("Next Deck: ", nextdeck, " Current Deck: ", unm.currdeck)
-		if nextdeck == unm.currdeck:
-			uld.cdate = timezone.now ()
-			uld.save()
-		else:
-			uld.delete()
-
-		unm.currdeck = nextdeck
-		unl = UserNotemLog (usernotem=unm, currdeck=unm.currdeck, ueval=ueval, nextdeck=nextdeck)
-		ut = UserTopic.objects.filter (id = unm.usertopic.id).first()
-		
-		unm.save()
-		unl.save ()
-		ut.save ()
-
-#		filters = Q(Q(usernotem__usertopic_id=userNote.usertopic.id) & Q(usernotem__currdeck=0))
-		return HttpResponseRedirect(reverse('ucm:topic_review',  args=(ut.id,)))
-	elif request.method == 'GET':
+	if request.method == 'GET':
 		# 1. Check in the learning deck for pendng cards
 		# 2. If pending found, proceed
 		# 3. If no pending,
@@ -144,8 +88,6 @@ def topic_review (request, pk=0, learn_more=False, template_name='ucm/topic_revi
 					return render(request, template_name, {'flag':'no_more', 'topic':pk})
 				else:
 					messages.success (request, 'Added ' + str (i) + ' cards to your learning deck')
-		# else:
-		# 	messages.success (request, "Resuming with previous decks")	
 	else:
 		raise Http404
 
@@ -177,7 +119,7 @@ def topic_review (request, pk=0, learn_more=False, template_name='ucm/topic_revi
 	return render(request, template_name, {'userNote':uld, 'note':nd, 'topic':pk,
 		'reviewLog':reviewLog, 'formReviewLog':formReviewLog ,'context':context})
 
-@login_required
+@login_required (redirect_field_name='next')
 def topic_share (request, pk, template_name="ucm/topic-share.html"):
 	context = {'ptitle': "Share Topic"}
 	topic = Topic.objects.filter (pk=pk).first()
@@ -213,7 +155,7 @@ def topic_share (request, pk, template_name="ucm/topic-share.html"):
 
 	return render(request, template_name, {'context':context})
 
-@login_required
+@login_required (redirect_field_name='next')
 def topic_subscribe (request, pk=0):
 	if request.method == 'GET':
 		print ("subscribe-subscribe-subscribe-subscribe:", pk)		
@@ -227,7 +169,7 @@ def topic_subscribe (request, pk=0):
 
 	return HttpResponseRedirect(reverse('ucm:home'))
 
-@login_required
+@login_required (redirect_field_name='next')
 def invite(request):
 	if request.method == 'POST':
 		print (request.POST)
@@ -323,7 +265,7 @@ def do_calc (ut):
 	return unm
 
 @query_debugger
-@login_required
+@login_required (redirect_field_name='next')
 def more (request):
 	if request.method == 'GET':
 		return topic_review (request, learn_more=True)
@@ -379,19 +321,19 @@ class YourView(views.APIView):
 		results = YourSerializer(yourdata, many=True).data
 		return Response(results)
 
-@login_required
+@login_required (redirect_field_name='next')
 def member_topic (request, pk=0, template_name='ucm/member-topics.html'):
 	topics = Topic.objects.filter (cuser=request.user)
 	context = {
-		'ptitle': "My Topics",
+		'ptitle': "Member Topics",
 		'topics': topics,
 	}
 
 	return render(request, template_name, {'context':context})
 
-@login_required
+@login_required (redirect_field_name='next')
 def member_dashboard (request, template_name='ucm/member-db-main.html'):
-	context = {'ptitle': "Home"}
+	context = {'ptitle': "Topics"}
 
 	if request.method == 'GET':
 		unmSummary = get_progress (request.user)
@@ -409,7 +351,7 @@ def member_dashboard (request, template_name='ucm/member-db-main.html'):
 	else:
 		raise Http404
 
-@login_required
+@login_required (redirect_field_name='next')
 @transaction.atomic
 def member_profile (request, pk=0, template_name='ucm/member-profile.html'):
 	if request.method == 'POST':
@@ -444,21 +386,21 @@ def member_profile (request, pk=0, template_name='ucm/member-profile.html'):
 	}
 	return render (request, template_name, {'context':context})
 
-@login_required
+@login_required (redirect_field_name='next')
 def member_network (request, template_name='ucm/coming-soon.html'):
 	context = {
 		"ptitle":'My Network'
 	}
 	return render(request, template_name, {'context':context})
 
-@login_required
+@login_required (redirect_field_name='next')
 def member_messaging (request, template_name='ucm/coming-soon.html'):
 	context = {
 		"ptitle":'Messaging'
 	}
 	return render(request, template_name, {'context':context})
 
-@login_required
+@login_required (redirect_field_name='next')
 def compose_topic (request, pk, template_name='ucm/compose-topic.html'):
 	context = {'ptitle': "Manage Topic"}
 	print ("Topic: ", pk)
@@ -503,7 +445,7 @@ def compose_topic (request, pk, template_name='ucm/compose-topic.html'):
 
 	return render(request, template_name, {'context':context})
 
-@login_required
+@login_required (redirect_field_name='next')
 def compose_note (request, pk, npk=0, template_name='ucm/compose-note.html'):
 	context = {
 		'ptitle': "Manage Topic",
@@ -638,3 +580,121 @@ def compose_note (request, pk, npk=0, template_name='ucm/compose-note.html'):
 		raise Http404
 
 	return render(request, template_name, {'context':context})
+
+def is_ajax(request):
+    """
+    This utility function is used, as `request.is_ajax()` is deprecated.
+    This implements the previous functionality. Note that you need to
+    attach this header manually if using fetch.
+    """
+    return request.META.get("HTTP_X_REQUESTED_WITH") == "XMLHttpRequest"
+
+@login_required ()
+@require_GET
+def feed (request):
+	context = {
+		'ptitle': "Feed",
+		'member_info': False,
+	}
+	all_feeds =  UserLearningDeck.objects.order_by('-cdate').filter (
+		usernotem__usertopic__user=request.user).select_related (
+	 		'usernotem', 'usernotem__notem', 'usernotem__notem__topic',
+			 'usernotem__notem__topic__cuser', 'usernotem__notem__topic__cuser__profile',
+			 )
+	paginator = Paginator(all_feeds, per_page=5)
+	page_num = int(request.GET.get("page", 1))
+	if page_num > paginator.num_pages:
+		raise Http404
+	feeds = paginator.page(page_num)
+
+	context ['feeds'] = feeds
+#	print (r"SQL: {}".format(feeds.object_list.query))
+	if is_ajax(request):
+		# R = render(request, 'ucm/index-feeds.html', {'context': context})
+		# data = str(R.content)		
+		# print (data)
+		return render(request, 'ucm/index-feeds.html', {'context': context})
+	else:
+		# R = render(request, 'ucm/index.html', {'context': context})
+		# data = str(R.content)		
+		# print (data)
+		return render(request, 'ucm/index.html', {'context': context})
+
+@login_required (redirect_field_name='next')
+@require_POST
+def topic_add_note (request):
+	reason = CsrfViewMiddleware().process_view(request, None, (), {})
+	if reason:
+		# CSRF failed
+		messages.error (request, "CSRF check failed")
+		raise PermissionException() # do what you need to do here
+
+	if request.POST.get('post') == 'Post':  # Block for post notes on task
+		print ("topic_review::POST:post================================>>")
+		formReviewLog  = ReviewLogForm (data=request.POST)
+		if formReviewLog.is_valid():
+			unm=formReviewLog.cleaned_data.get ('usernotem')
+			print ('Adding Notes--------------->', request.user, '->', unm.id)
+			formReviewLog.save ()
+			messages.success (request, 'New note added')
+		else:
+			messages.error (request, formReviewLog.errors)
+			print ("Post::post::Form Validation failed")
+
+	next = request.POST.get('next', '/')
+	return HttpResponseRedirect (next)
+
+@query_debugger
+@login_required (redirect_field_name='next')
+@require_POST
+def topic_add_review (request):
+	reason = CsrfViewMiddleware().process_view(request, None, (), {})
+	if reason:
+		# CSRF failed
+		messages.error (request, "CSRF check failed")
+		raise PermissionException() # do what you need to do here
+
+	nextdeck = 0
+	uldid = request.POST.get ('uldid', 0)
+	if 'r_0' in request.POST:	# Easy
+		ueval = 0
+	elif 'r_1' in request.POST: # Difficult
+		ueval = 1
+	elif 'r_2' in request.POST: # Very Difficult
+		ueval = 2
+
+	# Update deck details in UserNotem and create a log entry in UserNotemLog
+	uld = UserLearningDeck.objects.filter (id = uldid).first()
+	if not uld:
+		errormsg = "Integrity error.  Invalid note details received for learning deck card: " + str (uldid)
+		messages.error (request, errormsg)
+		raise ObjectDoesNotExist(errormsg)
+
+	nextdeck = calculateNextDeck (request, uld, ueval)
+	if nextdeck < 0:
+		next = request.POST.get('next', '/')
+		return HttpResponseRedirect (next)
+
+	unm = UserNotem.objects.filter (id = uld.usernotem.id).first()
+	if not unm:
+		errormsg = "Integrity error.  Notem not found for learning deck card: " + str (uldid)
+		messages.error (request, errormsg)
+		raise ObjectDoesNotExist(errormsg)
+
+	print ("Next Deck: ", nextdeck, " Current Deck: ", unm.currdeck)
+	if nextdeck == unm.currdeck:
+		uld.cdate = timezone.now ()
+		uld.save()
+	else:
+		uld.delete()
+
+	unm.currdeck = nextdeck
+	unl = UserNotemLog (usernotem=unm, currdeck=unm.currdeck, ueval=ueval, nextdeck=nextdeck)
+	ut = UserTopic.objects.filter (id = unm.usertopic.id).first()
+		
+	unm.save()
+	unl.save ()
+	ut.save ()
+
+	next = request.POST.get('next', '/')
+	return HttpResponseRedirect (next)

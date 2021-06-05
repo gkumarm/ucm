@@ -1,0 +1,179 @@
+{% load ucm_extras %}
+{% load static %}
+{% load crispy_forms_tags %}
+<div class="card  mb-2">
+  <!-- Card header -->
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-center p-0">
+      <div class="d-flex">
+        <a href="course-path-single.html">
+          <img src="{{ feed.usernotem.notem.topic.imagefile.url }}" alt="" class="avatar-md" />
+        </a>
+        <div class="ml-3">
+          <h4 class="mb-1">
+            <a href="course-path-single.html" class="text-inherit">
+              {{feed.usernotem.notem.topic.title}}
+            </a>
+          </h4>
+          <p class="mb-0 font-size-xs">
+            <span class="mr-2 text-dark font-weight-medium">{{feed.usernotem.notem.name}}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div> <!-- Card header -->
+  
+  <!-- Card Body -->
+  <div class="card-body">
+    {% with feed.usernotem.notem.sorted_noted_set.all as notes %}
+      {% for val in notes %}
+        <!--  Card Front  Part -->
+        {% if val.ntype == "title" %}
+          <h1 class="display-6">{{val.ndata}}</h1>
+        {% elif val.ntype == "text" %}
+          <p class="text-break fs-1">{{ val.ndata }}
+            {% if val.audio %}        
+              <input onclick="audioPlay('{{request.scheme}}://{{request.META.HTTP_HOST}}{% static val.audio %}');"
+                type='button' value='?? Play' />
+            {% endif %}          
+          </p>
+        {% elif val.ntype == "html" %}
+          <p class="text-break fs-1">{{ val.ndata| safe }}</p>
+        {% elif val.ntype == "example" %}
+          <p class="text-break fs-1">{{ val.ndata }}
+            {% if val.audio %}
+              <input onclick="audioPlay('{{request.scheme}}://{{request.META.HTTP_HOST}}{% static val.audio %}');" type='button' value='?? Play' />
+            {% endif %}
+          </p>
+        {% elif val.ntype == "image" %}
+          <img class="mb-3" src="{% static val.ndata %}" width="300" height="300" 
+            class="d-inline-block align-top rounded mx-auto" alt="ToDoApp" loading="lazy"/>
+        {% elif val.ntype == "url" %}
+          <a href="{{ val.ndata }}" target="_new">{{val.ndata}}</a><br>
+        {% else %}
+        {% endif %} <!--  End of Card Front  Part -->
+
+        <!--  Card Back Part -->
+        {% if forloop.first %}
+          {% if val.audio %}
+            <input class="btn btn-success" 
+              onclick="audioPlay('{{request.scheme}}://{{request.META.HTTP_HOST}}{% static val.audio %}');" 
+              type='button' value='?? Play' />
+          {% endif %} 
+        <a href="#!" class="d-flex align-items-center text-inherit text-decoration-none" 
+        data-toggle="collapse" data-target="#feed{{feed.usernotem.notem.id}}" 
+        aria-expanded="false" aria-controls="collapseOne">
+          <div class="mr-auto ">
+              <h4 class="mb-0 text-primary"> Show/Hide Contents</h4>
+          </div>
+          <span class="chevron-arrow ml-4 icon-shape bg-primary text-white icon-lg rounded-circle">
+              <i class="mdi mdi-chevron-down font-size-xl"></i>
+          </span>
+      </a>
+     
+          <div id="feed{{feed.usernotem.notem.id}}" class="collapse">
+            <hr class="my-3">            
+        {% endif %} <!--  End of Card Back Part -->
+
+        <!-- Action Buttons -->
+        {% if forloop.last %}
+          <form class="mb-3" name="form1" method="post" action="{% url 'ucm:topic_add_review' %}">
+            {% csrf_token %} 
+            <input type="hidden" value="{{feed.id}}" name="uldid"/>
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="btn btn-primary" name="r_0">Repeat</button>
+            <button type="submit" class="btn btn-primary" name="r_1">Good</button>
+            <button type="submit" class="btn btn-primary" name="r_2">Easy</button>
+          </form>
+
+          <!-- Review Log -->
+          <div class="mt-3 col-12" style="background-color: #e9ecef;">            
+            {% with feed.usernotem.sorted_reviewlog_set.all as reviewLog %}
+              {% for rl in reviewLog %}
+                {% if forloop.first %}
+                  <P class="mb-2">{{ reviewLog|length|expluralize:'Review Log' }}</P>
+                {% endif %}
+                <b>{{ rl.added_user }}</b> on {{ rl.cdate }}<br>
+                <P class="mb-1">{{ rl.notes }}</P>
+              {% empty %}
+                <P>No notes for this card</P>
+              {% endfor %}
+            {% endwith %}
+            <form name="form2" method="post" action="{% url 'ucm:topic_add_note' %}"> 
+              {% csrf_token %}
+              <input type="hidden" name="usernotem" value="{{feed.usernotem.id}}" id="id_usernotem">
+              <input type="hidden" name="next" value="{{ request.path }}">
+              <input type="hidden" name="cuser" value="{{user.id}}" id="id_cuser">
+              <div class="form-row row">
+                <div class="form-group col-10 col-lg-10 col-md-8 mb-2">
+                  <textarea class="form-control" placeholder="Add a note here..." name="notes" id="notes" maxlength="300"></textarea>
+                </div>
+                <div class="form-group col-auto mb-2">
+                  <button class="form-control btn btn-success" type="submit" name="post" id="post" value="Post">Post</button>
+                </div>
+              </div>
+            </form>
+          </div> <!-- End of Review Log -->
+        {% endif %} <!-- End of Action Buttons -->
+
+      {% endfor %}
+    {% endwith %}
+        </div> <!-- End of Collapse DIV -->
+  </div><!-- Card Body -->
+
+  <!-- Card footer -->
+  <div class="card-footer">
+    <div class="row align-items-center no-gutters">
+      <div class="col-auto">
+        <img src="{{ feed.usernotem.notem.topic.cuser.profile.imagefile.url|default:'/media/ucm/images/prof_pics/default.jpg'}}" class="rounded-circle avatar-xs" alt="">
+      </div>
+      <div class="col ml-2">
+        <span>{{ feed.usernotem.notem.topic.cuser.first_name}}</span>
+      </div>
+      <div class="col-auto">
+       <a href="#!" class="text-muted bookmark"><i class="fe fe-bookmark  "></i></a>
+      </div>
+    </div>
+  </div> <!-- Card footer -->
+
+  
+
+
+
+
+</div>
+
+<script>
+  function divCollapse(btn, nname) {
+    if ($(btn).text () == "Hide Contents") {
+      $(btn).text("Show Contents");
+    } else {
+      $(btn).text("Hide Contents");
+    }
+    $(nname).collapse('toggle')
+  }
+</script>  
+
+<script>
+  var audio = null;
+
+  function audioInit (url) {
+    audio = new Audio(url);  
+  }
+
+  function audioPlay (url) {
+    audioInit (url);
+    audio.play();
+  }
+
+  function AudioPause () {
+      audio.pause();
+  }
+
+  function AudioCancel () {
+      audio.pause();
+      audio.currentTime = 0;
+      audio = null;
+  }
+
+</script> 

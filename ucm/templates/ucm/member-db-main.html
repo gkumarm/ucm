@@ -1,56 +1,49 @@
-{% extends "ucm/basen.html" %}
+{% extends "ucm/member.html" %}
 {% load static %}
 {% load crispy_forms_tags %}
-{% block content %}
-<div class="pb-5 py-md-5">
-    <div class="container">
-      {% include 'ucm/member-info.html' %}      
-      <div class="row">
-        <div class="col-md-12">
-          <!-- Side Navbar -->
-          <ul class="nav nav-lb-tab mb-6" id="tab" role="tablist">
-            <li class="nav-item ml-0" role="presentation">
-              <a class="nav-link active " id="inprogress-tab" data-toggle="pill" href="#inprogress" role="tab"
-                aria-controls="inprogress" aria-selected="true">In Progress </a>
-            </li>
-            <li class="nav-item" role="presentation">
-              <a class="nav-link" id="suggested-tab" data-toggle="pill" href="#suggested" role="tab"
-                aria-controls="suggested" aria-selected="false">Suggested</a>
-            </li>
-            <li class="nav-item" role="presentation">
-              <a class="nav-link" id="completed-tab" data-toggle="pill" href="#completed" role="tab" aria-controls="completed"
-                aria-selected="completed">
-                Completed</a>
-            </li>
-          </ul>
-          <!-- Tab content -->
-          <div class="tab-content" id="tabContent">
-            <!-- TAB In Progress -->
-            {% include 'ucm/member-db-inprogress.html' %}
-            <!-- TAB Suggested -->
-            {% include 'ucm/member-db-suggested.html' %}            
-            <!-- TAB Path -->
-            <div class="tab-pane fade" id="completed" role="tabpanel" aria-labelledby="completed-tab">
-              <div class="row  d-flex justify-content-center text-center">
-                <div class="col-xl-5 col-lg-5 col-md-12 col-12">
-                  <div class="py-6">
-                    <img src="{% static 'ucm/assets/images/svg/path-img.svg'%}" alt="" class="img-fluid">
-                    <div class="mt-4 ">
-                      <h2 class="display-4 font-weight-bold">Coming Soon</h2>
-                      <p class="mb-5">The designer working on our design so for now we schedule it
-                        to come soon.
-                        we release it soon for you. Thank you for watching.</p>
-                      <a href="{% url 'ucm:home' %}" class="btn btn-primary">
-                        Back To Home
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
+{% block contentMain %}
+<div class="col-md-12">
+  <!-- Side Navbar -->
+  <ul class="nav nav-lb-tab mb-6" id="tab" role="tablist">
+    <li class="nav-item ml-0" role="presentation">
+      <a class="nav-link active " id="inprogress-tab" data-toggle="pill" href="#inprogress" role="tab"
+        aria-controls="inprogress" aria-selected="true">In Progress </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="suggested-tab" data-toggle="pill" href="#suggested" role="tab"
+        aria-controls="suggested" aria-selected="false">Suggested</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="completed-tab" data-toggle="pill" href="#completed" role="tab" aria-controls="completed"
+        aria-selected="completed">
+        Completed</a>
+    </li>
+  </ul>
+  <!-- Tab content -->
+  <div class="tab-content" id="tabContent">
+    <!-- TAB In Progress -->
+    {% include 'ucm/member-db-inprogress.html' %}
+    <!-- TAB Suggested -->
+    {% include 'ucm/member-db-suggested.html' %}            
+    <!-- TAB Path -->
+    <div class="tab-pane fade" id="completed" role="tabpanel" aria-labelledby="completed-tab">
+      <div class="row  d-flex justify-content-center text-center">
+        <div class="col-xl-5 col-lg-5 col-md-12 col-12">
+          <div class="py-6">
+            <img src="{% static 'ucm/assets/images/svg/path-img.svg'%}" alt="" class="img-fluid">
+            <div class="mt-4 ">
+              <h2 class="display-4 font-weight-bold">Coming Soon</h2>
+              <p class="mb-5">The designer working on our design so for now we schedule it
+                to come soon.
+                we release it soon for you. Thank you for watching.</p>
+              <a href="{% url 'ucm:home' %}" class="btn btn-primary">
+                Back To Home
+              </a>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  {% endblock %}
+</div>
+{% endblock %}

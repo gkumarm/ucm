@@ -1,0 +1,33 @@
+{% extends "ucm/member.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load ucm_extras %}
+{% block contentMain %}
+<!-- Main Content -->
+  <div class="col-lg-3"> <!-- Left scroll Menu-->
+    {% include 'ucm/index-lnav.html' %}
+  </div> <!-- Left scroll Menu-->
+
+  <div class="col-lg-9"> <!-- Container for Main content-->        
+    <div class="feeds" id="scroll-element">
+      {% include 'ucm/index-feeds.html' %}
+    </div>
+    <div id="bottom-sentinel"></div> <!-- bottom sentinel element -->
+  </div>
+  <div></div>
+
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+  </script>
+  <script src="/static/mathjax/tex-chtml.js" id="MathJax-script" type="text/javascript" async ></script>
+  <script src="{% static '/ucm/js/infinite.js' %}"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      let bottomSentinel = document.querySelector("#bottom-sentinel");
+      let scrollElement = document.querySelector("#scroll-element");
+      let baseUrl = "{% url 'ucm:home' %}";
+      attachInfiniteScroll(bottomSentinel, scrollElement, baseUrl);
+    })
+  </script>
+{% endblock %}
