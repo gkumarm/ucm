@@ -29,25 +29,25 @@
       {% for val in notes %}
         <!--  Card Front  Part -->
         {% if val.ntype == "title" %}
-          <h1 class="display-6">{{val.ndata}}</h1>
+          <h1 class="h3">{{val.ndata}}</h1>
         {% elif val.ntype == "text" %}
-          <p class="text-break fs-1">{{ val.ndata }}
+          <p class="lead text-break">{{ val.ndata }}
             {% if val.audio %}        
               <input onclick="audioPlay('{{request.scheme}}://{{request.META.HTTP_HOST}}{% static val.audio %}');"
                 type='button' value='?? Play' />
             {% endif %}          
           </p>
         {% elif val.ntype == "html" %}
-          <p class="text-break fs-1">{{ val.ndata| safe }}</p>
+          <p class="lead text-break">{{ val.ndata| safe }}</p>
         {% elif val.ntype == "example" %}
-          <p class="text-break fs-1">{{ val.ndata }}
+          <p class="lead text-break">{{ val.ndata }}
             {% if val.audio %}
               <input onclick="audioPlay('{{request.scheme}}://{{request.META.HTTP_HOST}}{% static val.audio %}');" type='button' value='?? Play' />
             {% endif %}
           </p>
         {% elif val.ntype == "image" %}
           <img class="mb-3" src="{% static val.ndata %}" width="300" height="300" 
-            class="d-inline-block align-top rounded mx-auto" alt="ToDoApp" loading="lazy"/>
+            class="d-inline-block align-top rounded mx-auto" alt="Image" loading="lazy"/>
         {% elif val.ntype == "url" %}
           <a href="{{ val.ndata }}" target="_new">{{val.ndata}}</a><br>
         {% else %}
