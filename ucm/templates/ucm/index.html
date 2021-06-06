@@ -2,6 +2,9 @@
 {% load static %}
 {% load crispy_forms_tags %}
 {% load ucm_extras %}
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});  
+</script>
 {% block contentMain %}
 <!-- Main Content -->
   <div class="col-lg-3"> <!-- Left scroll Menu-->
@@ -16,10 +19,7 @@
   </div>
   <div></div>
 
-  <script type="text/x-mathjax-config">
-    MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
-  </script>
-  <script src="/static/mathjax/tex-chtml.js" id="MathJax-script" type="text/javascript" async ></script>
+  <script class='ajax' src="/static/mathjax/tex-chtml.js" id="MathJax-script" type="text/javascript" async ></script>
   <script src="{% static '/ucm/js/infinite.js' %}"></script>
 
   <script>
