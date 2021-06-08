@@ -25,6 +25,8 @@ urlpatterns = [
 	path ('topic/review/addreview/',          views.topic_add_review, name=constants.GUID_topic_add_review),		
 	path ('topic/subscribe/<int:pk>/',        views.topic_subscribe,  name=constants.GUID_topic_subscribe),
 	path ('topic/share/<int:pk>/',            views.topic_share,      name=constants.GUID_topic_share),
+	path ('topic/pause/<int:pk>/',            views.topic_pause,      name=constants.GUID_topic_pause),
+	path ('topic/resume/<int:pk>/',           views.topic_resume,     name=constants.GUID_topic_resume),
 
 	re_path (r"^more/",            views.more,   name='more'),
 	re_path (r'^invite/$',         views.invite,   name='invite'),	

@@ -120,6 +120,34 @@ def topic_review (request, pk=0, learn_more=False, template_name='ucm/topic_revi
 		'reviewLog':reviewLog, 'formReviewLog':formReviewLog ,'context':context})
 
 @login_required (redirect_field_name='next')
+@require_GET
+def topic_pause (request, pk):
+
+	ut = UserTopic.objects.filter (pk=pk).first()
+	if not ut:
+		raise ValidationError(r"Topic [{}] is not a valid topic".format (ut.topic.title))
+	ut.status = 1 #1-> Paused
+	ut.save ()
+	messages.success (request, r"Topic '{}' set to Pause status".format (ut.topic.title))
+
+	next = request.GET.get('next', '/')
+	return HttpResponseRedirect (next)
+
+@login_required (redirect_field_name='next')
+@require_GET
+def topic_resume (request, pk):
+
+	ut = UserTopic.objects.filter (pk=pk).first()
+	if not ut:
+		raise ValidationError(r"Topic [{}] is not a valid topic".format (ut.topic.title))
+	ut.status = 0 #1-> enabled
+	ut.save ()
+	messages.success (request, r"Topic '{}' set to Resume status".format (ut.topic.title))
+
+	next = request.GET.get('next', '/')
+	return HttpResponseRedirect (next)
+
+@login_required (redirect_field_name='next')
 def topic_share (request, pk, template_name="ucm/topic-share.html"):
 	context = {'ptitle': "Share Topic"}
 	topic = Topic.objects.filter (pk=pk).first()
@@ -198,7 +226,7 @@ def invite(request):
 	user_form = UserForm()
 	return render(request,'uauth/invite.html',{'user_form':user_form,})
 
-def get_progress (user):
+def get_progress (user_id):
  # 0. card_count = 10; NEXT_BOX = 0
  # 1. no_of_cards_from_NEXT_BOX = card_count : if count() > card_count ? card_count : sum ()
  # 2. Review count = card_count + (card_count - no_of_cards_from_NEXT_BOX)
@@ -208,7 +236,7 @@ def get_progress (user):
  # 5.2 Repeat step 1
 
 	unm = UserNotem.objects \
-		.filter (usertopic__in = UserTopic.objects.filter (user=user)) \
+		.filter (usertopic__in = UserTopic.objects.filter (user_id=user_id)) \
 		.values('usertopic_id', 'currdeck') \
 		.annotate(total=Count('currdeck')) \
 		.order_by('usertopic_id', 'currdeck')
@@ -219,7 +247,6 @@ def get_progress (user):
 #		print ('------------>', gtotal)
 		x ['percentage'] = round ((x ['total']/gtotal)*100)
 #		print (x)
-
 	return unm
 
 def do_calc (ut):
@@ -323,7 +350,7 @@ class YourView(views.APIView):
 
 @login_required (redirect_field_name='next')
 def member_topic (request, pk=0, template_name='ucm/member-topics.html'):
-	topics = Topic.objects.filter (cuser=request.user)
+	topics = Topic.objects.filter (cuser=request.user).select_related('cuser')
 	context = {
 		'ptitle': "Member Topics",
 		'topics': topics,
@@ -336,10 +363,15 @@ def member_dashboard (request, template_name='ucm/member-db-main.html'):
 	context = {'ptitle': "Topics"}
 
 	if request.method == 'GET':
-		unmSummary = get_progress (request.user)
-		userTopic = UserTopic.objects.filter (user=request.user)
+		unmSummary = get_progress (request.user.id)
+		userTopic = UserTopic.objects.filter (
+			user_id=request.user.id).select_related(
+				'topic', 'topic__cuser', 'topic__cuser__profile'
+			)
 		utvl = userTopic.values_list('topic_id',flat=True)
-		suggestedTopic = Topic.objects.exclude (id__in=utvl)
+		suggestedTopic = Topic.objects.exclude (
+			id__in=utvl).select_related(
+				'cuser','cuser__profile')
 
 		return render(request, "ucm/member-db-main.html", {
 				'context':context,
@@ -597,7 +629,8 @@ def feed (request):
 		'member_info': False,
 	}
 	all_feeds =  UserLearningDeck.objects.order_by('-cdate').filter (
-		usernotem__usertopic__user=request.user).select_related (
+		usernotem__usertopic__user=request.user, 
+		usernotem__usertopic__status=0).select_related (
 	 		'usernotem', 'usernotem__notem', 'usernotem__notem__topic',
 			 'usernotem__notem__topic__cuser', 'usernotem__notem__topic__cuser__profile',
 			 )

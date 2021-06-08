@@ -18,3 +18,5 @@ GUID_topic_add_note   = 'topic_add_note'
 GUID_topic_add_review = "topic_add_review"
 GUID_topic_subscribe  = 'topic_subscribe'
 GUID_topic_share      = 'topic_share'
+GUID_topic_pause      = 'topic_pause'
+GUID_topic_resume     = 'topic_resume'

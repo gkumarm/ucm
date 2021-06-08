@@ -147,6 +147,7 @@ class UserTopic (models.Model):
 	dclimit = models.PositiveSmallIntegerField (null=False, blank=False, default=10)
 	cdate = models.DateTimeField (auto_now_add=True)
 	mdate = models.DateTimeField (auto_now=True)
+	status = models.PositiveSmallIntegerField (null=False, default=0) # 0- Ready, 1-Paused
 
 	def __str__(self):
 		return str (self.user) + ':' + str (self.topic)
