@@ -70,12 +70,12 @@
                 <div class="card">
                     <ul class="nav nav-line-bottom" id="pills-tab-javascript-behavior" role="tablist">
                         <li class="nav-item">
-                            <a class="nav-link active" id="pills-detail-tab" data-toggle="pill" href="#pills-detail" role="tab" 
-                                aria-controls="pills-detail" aria-selected="true">Detail</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="pills-note-tab" data-toggle="pill" href="#pills-note" role="tab" 
+                            <a class="nav-link active" id="pills-note-tab" data-toggle="pill" href="#pills-note" role="tab" 
                                 aria-controls="pills-note" aria-selected="false">Note</a>
+                        </li>                        
+                        <li class="nav-item">
+                            <a class="nav-link" id="pills-detail-tab" data-toggle="pill" href="#pills-detail" role="tab" 
+                                aria-controls="pills-detail" aria-selected="true">Detail</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" id="pills-preview-tab" data-toggle="pill" href="#pills-preview" role="tab" 
@@ -84,6 +84,34 @@
                     </ul>
                     <!-- Tab content -->
                     <div class="tab-content p-4" id="pills-tabContent-javascript-behavior">
+                        <div class="tab-pane tab-note fade" id="pills-note" role="tabpanel" aria-labelledby="pills-note-tab">
+                            <div>
+                                <h3 class="mb-0">Manage Note details</h3>
+                            </div>
+                            {{ context.formsetNotem.management_form }}
+                            {% for form in context.formsetNotem %}
+                                {% if not form.instance.pk %}
+                                    <h3 class="mb-0">Add new Note here: </h3>
+                                {% endif %}                            
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                                <div class="row">
+                                    <div class="col-md-12 col-sm-12 mb-0 form-group">
+                                        {{ form.name |as_crispy_field }}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 col-sm-12 mb-0 form-group">
+                                        {{ form.DELETE |as_crispy_field }}
+                                    </div>
+                                </div>
+                                <div class="divider mb-1 py-1 bg-dark"></div>                                
+                            {% endfor %}
+                            <div><br>
+                                <button type="submit" id="submitButton" class="btn btn-success">Save</button>                
+                            </div>                              
+                        </div>                        
                         <div class="tab-pane tab-detail fade active show" id="pills-detail" role="tabpanel" aria-labelledby="pills-detail-tab">
                             <div>
                                 <h3 class="mb-0">Note details: {{ context.formsetNoted.instance.name }}</h3>
@@ -118,34 +146,6 @@
                             <div><br>
                                 <button type="submit" id="submitButton" class="btn btn-success">Save</button>                
                             </div>                                
-                        </div>
-                        <div class="tab-pane tab-note fade" id="pills-note" role="tabpanel" aria-labelledby="pills-note-tab">
-                            <div>
-                                <h3 class="mb-0">Manage Note details</h3>
-                            </div>
-                            {{ context.formsetNotem.management_form }}
-                            {% for form in context.formsetNotem %}
-                                {% if not form.instance.pk %}
-                                    <h3 class="mb-0">Add new Note here: </h3>
-                                {% endif %}                            
-                                {% for hidden in form.hidden_fields %}
-                                    {{ hidden }}
-                                {% endfor %}
-                                <div class="row">
-                                    <div class="col-md-12 col-sm-12 mb-0 form-group">
-                                        {{ form.name |as_crispy_field }}
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-4 col-sm-12 mb-0 form-group">
-                                        {{ form.DELETE |as_crispy_field }}
-                                    </div>
-                                </div>
-                                <div class="divider mb-1 py-1 bg-dark"></div>                                
-                            {% endfor %}
-                            <div><br>
-                                <button type="submit" id="submitButton" class="btn btn-success">Save</button>                
-                            </div>                              
                         </div>
                         <div class="tab-pane tab-preview fade" id="pills-preview" role="tabpanel" aria-labelledby="pills-preview-tab">
                             <div>
