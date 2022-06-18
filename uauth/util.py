@@ -48,7 +48,7 @@ def subscribe_topic (user_id, topic_id, request):
 def send_invitation_email (to_name, to_email, hash_string, request):
 	currsite = get_current_site(request)
 
-	sender = "UCMem <gk.malattiri@gmail.com>"
+	sender = "UCMem <mailer@unicogs.com>"
 	subject = request.user.first_name + " is Inviting to join UCMem!"
 
 	text_message = f"""You are invited to join UCMem by clicking the following link
@@ -76,7 +76,7 @@ def send_invitation_email (to_name, to_email, hash_string, request):
 	
 	print ("Response of email send --> ", 
 		send_mail (subject, text_message, 
-					sender, [to_email,], fail_silently=True,
+					sender, [to_email,], fail_silently=False,
 					html_message=html_message))
 
 	return 1
@@ -84,7 +84,7 @@ def send_invitation_email (to_name, to_email, hash_string, request):
 def send_user_verification_mail (recipient, hash_string, request):
 	currsite = get_current_site(request)
 
-	sender = "UCMem <gk.malattiri@gmail.com>"
+	sender = "UCMem <mailer@unicogs.com>"
 	subject = "Welcome to UCMem! Confirm Your Email"
 
 	text_message = f"""You are one step away from confirming 
