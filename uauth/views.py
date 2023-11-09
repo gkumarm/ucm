@@ -7,7 +7,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from django.contrib.auth.forms import UserCreationForm
 from django.core.cache import cache
-from django.utils.http import is_safe_url
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from base.settings import LOGIN_REDIRECT_URL
 from .forms import UserForm
@@ -18,7 +18,7 @@ from . import util as util
 def usignout(request):
 	logout(request)
 	messages.success(request, 'You are logged out!')	
-	return HttpResponseRedirect(reverse('uauth:signin'))
+	return HttpResponseRedirect(reverse('ucm:home'))
 
 def usignup(request):
 	context = {'ptitle': "Sign Up"}
@@ -152,7 +152,7 @@ def usignin(request):
 				if next_url:
 					cache.delete ('next')
 					print ("next url from cache ==>", next_url)
-					if not is_safe_url (url=next_url,
+					if not url_has_allowed_host_and_scheme (url=next_url,
 						allowed_hosts = {request.get_host()},
 						require_https = request.is_secure()):
 						next_url = LOGIN_REDIRECT_URL
@@ -188,8 +188,8 @@ def upassword(request):
 
 	return render(request, 'uauth/password.html', {'form': form})
 
-# def error_404 (request, exception):
-# 	return render(request, 'uauth/404.html')
+def error_404 (request, exception):
+	return render(request, 'ucm/404.html')
 
-# def error_500 (request):
-# 	return render(request, 'uauth/500.html')
+def error_500 (request):
+	return render(request, 'ucm/500.html')
